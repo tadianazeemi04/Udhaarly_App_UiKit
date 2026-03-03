@@ -1,0 +1,33 @@
+//
+//  LocalDataManager.swift
+//  UdhaarlyApp
+//
+//  Created by Tadian Ahmad Azeemi on 02/03/2026.
+//
+
+import Foundation
+import SwiftData
+
+class LocalDataManager {
+    
+    static let shared = LocalDataManager()
+    var container: ModelContainer?
+    var context: ModelContext?
+    
+    init() {
+        do {
+            container = try ModelContainer(for: LocalUser.self)
+            if let container = container {
+                context = ModelContext(container)
+            }
+        } catch {
+            print("Failed to initialize swiftdata: \(error)")
+        }
+    }
+    
+    func saveUser(user: LocalUser) {
+        context?.insert(user)
+        try? context?.save()
+    }
+    
+}
