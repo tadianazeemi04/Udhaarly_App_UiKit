@@ -30,4 +30,9 @@ class LocalDataManager {
         try? context?.save()
     }
     
+    func saveProduct(product: LocalProduct) {
+        context?.insert(product)
+        try? context?.save()
+    }
+    
 }

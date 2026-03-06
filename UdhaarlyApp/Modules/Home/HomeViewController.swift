@@ -9,6 +9,8 @@ import UIKit
 
 class HomeViewController: UIViewController {
     private var logoImageUI = UIImageView()
+    private var bottomViewTopConstraint: NSLayoutConstraint?
+    private let bottomViewHeight: CGFloat = 200
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -52,29 +54,30 @@ class HomeViewController: UIViewController {
         bottomView.layer.shadowRadius = 10
         bottomView.layer.masksToBounds = false
         
-        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeUp))
-        swipeUp.direction = .up
-        bottomView.addGestureRecognizer(swipeUp)
-        
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        bottomView.addGestureRecognizer(panGesture)
         
         view.addSubview(bottomView)
+        
+        let topConstraint = bottomView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: -bottomViewHeight)
+        bottomViewTopConstraint = topConstraint
         
         NSLayoutConstraint.activate([
             bottomView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            bottomView.heightAnchor.constraint(equalToConstant: 200)
+            topConstraint,
+            bottomView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
         let arrowImageUI = UIImageView()
         arrowImageUI.image = UIImage(systemName: "chevron.up.2")
-        arrowImageUI.tintColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0) // Your brand orange
+        arrowImageUI.tintColor = .brandOrange // Your brand orange
         arrowImageUI.contentMode = .scaleAspectFit
         
         let swipeLabel = UILabel()
         swipeLabel.text = "Swipe Up to Continue"
         swipeLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        swipeLabel.textColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        swipeLabel.textColor = .brandOrange
         swipeLabel.textAlignment = .center
         
         let swipeStackView = UIStackView(arrangedSubviews: [arrowImageUI, swipeLabel])
@@ -91,6 +94,50 @@ class HomeViewController: UIViewController {
             arrowImageUI.heightAnchor.constraint(equalToConstant: 22),
             arrowImageUI.widthAnchor.constraint(equalToConstant: 22)
         ])
+    }
+    
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        let translation = gesture.translation(in: view)
+        
+        switch gesture.state {
+        case .changed:
+            // Allow dragging upwards (negative translation)
+            if translation.y < 0 {
+                bottomViewTopConstraint?.constant = -bottomViewHeight + translation.y
+            }
+        case .ended, .cancelled:
+            // Threshold to trigger transition (e.g. dragged up by 100 points)
+            if translation.y < -100 {
+                // Complete the swipe visually then transition
+                UIView.animate(withDuration: 0.3, animations: {
+                    self.bottomViewTopConstraint?.constant = -self.view.frame.height
+                    self.view.layoutIfNeeded()
+                }) { _ in
+                    let signupVC = SignupViewController()
+                    
+                    // Create sliding up transition
+                    let transition = CATransition()
+                    transition.duration = 0.4
+                    transition.type = .push
+                    transition.subtype = .fromTop
+                    transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    self.navigationController?.view.layer.add(transition, forKey: kCATransition)
+                    
+                    self.navigationController?.pushViewController(signupVC, animated: false)
+                    
+                    // Reset position silently for when user comes back
+                    self.bottomViewTopConstraint?.constant = -self.bottomViewHeight
+                }
+            } else {
+                // Snap back
+                UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
+                    self.bottomViewTopConstraint?.constant = -self.bottomViewHeight
+                    self.view.layoutIfNeeded()
+                })
+            }
+        default:
+            break
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {

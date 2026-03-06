@@ -9,6 +9,9 @@ import UIKit
 
 class OTPViewController: UIViewController {
     
+    var userEmail: String?
+    var userPassword: String?
+    
     private var logoImageUI = UIImageView(image: UIImage(resource: .udhaarlyLogo))
     private var OtpText: UILabel = {
         let label = UILabel()
@@ -22,7 +25,7 @@ class OTPViewController: UIViewController {
         tf.placeholder = placholder
         tf.layer.cornerRadius = 10
         tf.layer.borderWidth = 1
-        tf.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
+        tf.layer.borderColor = UIColor.brandOrange.cgColor
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf .heightAnchor.constraint(equalToConstant: 50).isActive = true
         return tf
@@ -40,6 +43,7 @@ class OTPViewController: UIViewController {
         btn.heightAnchor.constraint(equalToConstant: 50).isActive = true
         btn.backgroundColor = .systemGray
         btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.addDropShadow(color: .brandOrange, opacity: 0.3, radius: 6, offset: CGSize(width: 0, height: 4))
         return btn
     }()
 
@@ -48,7 +52,7 @@ class OTPViewController: UIViewController {
             let tf = UITextField()
             tf.layer.cornerRadius = 10
             tf.layer.borderWidth = 3
-            tf.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
+            tf.layer.borderColor = UIColor.brandOrange.cgColor
             tf.translatesAutoresizingMaskIntoConstraints = false
             tf .heightAnchor.constraint(equalToConstant: 50).isActive = true
             tf .widthAnchor.constraint(equalToConstant: 50).isActive = true
@@ -67,7 +71,7 @@ class OTPViewController: UIViewController {
             
         if isComplete {
             verifyButton.isEnabled = true
-            verifyButton.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+            verifyButton.backgroundColor = .brandOrange
         } else {
             verifyButton.isEnabled = false
             verifyButton.backgroundColor = .systemGray4
@@ -100,7 +104,7 @@ class OTPViewController: UIViewController {
             resendActionButton.isEnabled = false
         } else {
             resendActionButton.setTitle("Resend OTP", for: .normal)
-            resendActionButton.setTitleColor(UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0), for: .normal)
+            resendActionButton.setTitleColor(.brandOrange, for: .normal)
             resendActionButton.isEnabled = true
         }
     }
@@ -149,6 +153,8 @@ class OTPViewController: UIViewController {
     
     @objc private func didTapVerify(){
         let verify = InfoDataViewController()
+        verify.userEmail = self.userEmail
+        verify.userPassword = self.userPassword
         navigationController?.pushViewController(verify, animated: true)
     }
     

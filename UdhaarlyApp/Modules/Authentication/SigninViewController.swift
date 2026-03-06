@@ -21,7 +21,7 @@ class SigninViewController: UIViewController {
         let label1 = UILabel()
         label1.text = "Sign in"
         label1.font = .systemFont(ofSize: 26, weight: .bold)
-        label1.textColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        label1.textColor = .brandOrange
         return label1
     }()
     
@@ -30,10 +30,11 @@ class SigninViewController: UIViewController {
         tf.placeholder = placeholder
         tf.layer.cornerRadius = 10
         tf.layer.borderWidth = 1
-        tf.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
+        tf.layer.borderColor = UIColor.brandOrange.cgColor
         tf.setLeftPaddingPoints(15)
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        tf.addDropShadow()
         return tf
     }
     
@@ -77,7 +78,7 @@ class SigninViewController: UIViewController {
         if validationCondition {
             signinButton.isEnabled = true
             signinButton.alpha = 1
-            signinButton.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+            signinButton.backgroundColor = .brandOrange
         } else {
             signinButton.isEnabled = false
             signinButton.alpha = 0.5
@@ -88,11 +89,12 @@ class SigninViewController: UIViewController {
     private let signinButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Sign in", for: .normal)
-        btn.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        btn.backgroundColor = .brandOrange
         btn.layer.cornerRadius = 10
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
         btn.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        btn.addDropShadow(color: .brandOrange, opacity: 0.3, radius: 6, offset: CGSize(width: 0, height: 4))
         return btn
     }()
     
@@ -107,7 +109,7 @@ class SigninViewController: UIViewController {
         ])
         
         attributedString.append(NSAttributedString(string: actionText, attributes: [
-            .foregroundColor: UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0),
+            .foregroundColor: UIColor.brandOrange,
             .font: UIFont.systemFont(ofSize: 14, weight: .bold)
         ]))
         

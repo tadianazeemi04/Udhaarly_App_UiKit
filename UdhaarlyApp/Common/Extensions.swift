@@ -16,3 +16,13 @@ extension UITextField {
     }
 }
 
+extension UIView {
+    func addDropShadow(color: UIColor = .black, opacity: Float = 0.1, radius: CGFloat = 4, offset: CGSize = CGSize(width: 0, height: 2)) {
+        self.layer.shadowColor = color.cgColor
+        self.layer.shadowOpacity = opacity
+        self.layer.shadowOffset = offset
+        self.layer.shadowRadius = radius
+        self.layer.masksToBounds = false
+    }
+}
+

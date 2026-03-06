@@ -78,10 +78,11 @@ class InfoDataViewController: UIViewController {
         tf.placeholder = placeholder
         tf.layer.cornerRadius = 15
         tf.layer.borderWidth = 1.5
-        tf.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
+        tf.layer.borderColor = UIColor.brandOrange.cgColor
         tf.setLeftPaddingPoints(15)
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        tf.addDropShadow()
         
         if let iconName = icon {
             let iconView = UIImageView(image: UIImage(systemName: iconName))
@@ -111,11 +112,12 @@ class InfoDataViewController: UIViewController {
     private var startButtun: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Let's Get Started →", for: .normal)
-        btn.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        btn.backgroundColor = .brandOrange
         btn.layer.cornerRadius = 12
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 20, weight: .bold)
         btn.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        btn.addDropShadow(color: .brandOrange, opacity: 0.3, radius: 6, offset: CGSize(width: 0, height: 4))
         return btn
     }()
     
@@ -312,7 +314,7 @@ extension InfoDataViewController: PHPickerViewControllerDelegate {
             guard let image = image as? UIImage else { return }
             
             // Compress to stay around 1MB
-            if let compressedData = image.jpegData(compressionQuality: 0.5) {
+            if image.jpegData(compressionQuality: 0.5) != nil {
                 DispatchQueue.main.async {
                     self?.profileImageView.image = image
                     // Store this compressedData to save later

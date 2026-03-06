@@ -21,7 +21,7 @@ class SignupViewController: UIViewController {
         let label1 = UILabel()
         label1.text = "Join US"
         label1.font = .systemFont(ofSize: 26, weight: .bold)
-        label1.textColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        label1.textColor = .brandOrange
         return label1
     }()
     
@@ -30,15 +30,43 @@ class SignupViewController: UIViewController {
         tf.placeholder = placeholder
         tf.layer.cornerRadius = 10
         tf.layer.borderWidth = 1
-        tf.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
+        tf.layer.borderColor = UIColor.brandOrange.cgColor
         tf.setLeftPaddingPoints(15)
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        tf.addDropShadow()
         return tf
     }
     
     private lazy var emailTextField = createStyledTextField(placeholder: "Enter Email")
+    
+    private let emailErrorLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "Invalid email format"
+        lbl.textColor = .systemRed
+        lbl.font = .systemFont(ofSize: 12)
+        lbl.isHidden = true
+        return lbl
+    }()
+    
     private lazy var passwordTextField = createStyledTextField(placeholder: "Enter Password")
+    
+    private let passwordLengthLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "• At least 6 characters"
+        lbl.textColor = .gray
+        lbl.font = .systemFont(ofSize: 12)
+        return lbl
+    }()
+    
+    private let passwordNumberLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "• Contains a number"
+        lbl.textColor = .gray
+        lbl.font = .systemFont(ofSize: 12)
+        return lbl
+    }()
+    
     private lazy var confirmPasswordTextField = createStyledTextField(placeholder: "Confirm Password")
     
     private func setupPasswordToggle(for textField: UITextField) {
@@ -71,20 +99,58 @@ class SignupViewController: UIViewController {
     }
     
     @objc private func validateFields() {
+        let email = emailTextField.text ?? ""
         let password = passwordTextField.text ?? ""
         let confirm = confirmPasswordTextField.text ?? ""
         
-        if !confirm.isEmpty && password != confirm {
-                confirmPasswordTextField.layer.borderColor = UIColor.red.cgColor
-            } else {
-                confirmPasswordTextField.layer.borderColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0).cgColor
-            }
+        // Email Validation
+        let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}$"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        let isEmailValid = emailPredicate.evaluate(with: email)
         
-        let isMatch = !password.isEmpty && password == confirm && password.count >= 6
+        emailErrorLabel.isHidden = isEmailValid || email.isEmpty
+        if !email.isEmpty {
+            emailTextField.layer.borderColor = isEmailValid ? UIColor.systemGreen.cgColor : UIColor.systemRed.cgColor
+        } else {
+            emailTextField.layer.borderColor = UIColor.brandOrange.cgColor
+        }
+        
+        // Password Rules Validation
+        let hasLength = password.count >= 6
+        let hasNumber = password.rangeOfCharacter(from: .decimalDigits) != nil
+        
+        if !password.isEmpty {
+            passwordLengthLabel.textColor = hasLength ? .systemGreen : .systemRed
+            passwordNumberLabel.textColor = hasNumber ? .systemGreen : .systemRed
+        } else {
+            passwordLengthLabel.textColor = .gray
+            passwordNumberLabel.textColor = .gray
+        }
+        
+        let isPasswordValid = hasLength && hasNumber
+        
+        // Confirm Password Match Validation
+        if !confirm.isEmpty {
+            if password != confirm {
+                confirmPasswordTextField.layer.borderColor = UIColor.systemRed.cgColor
+                passwordTextField.layer.borderColor = UIColor.brandOrange.cgColor
+            } else {
+                let finalColor = isPasswordValid ? UIColor.systemGreen.cgColor : UIColor.brandOrange.cgColor
+                confirmPasswordTextField.layer.borderColor = finalColor
+                passwordTextField.layer.borderColor = finalColor
+            }
+        } else {
+            confirmPasswordTextField.layer.borderColor = UIColor.brandOrange.cgColor
+            // Keep default orange until confirm password initiates
+            passwordTextField.layer.borderColor = UIColor.brandOrange.cgColor
+        }
+        
+        let isMatch = !password.isEmpty && password == confirm && isPasswordValid && isEmailValid
+        
         if isMatch {
             signupButton.isEnabled = true
             signupButton.alpha = 1
-            signupButton.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+            signupButton.backgroundColor = .brandOrange
         } else {
             signupButton.isEnabled = false
             signupButton.alpha = 0.5
@@ -95,23 +161,19 @@ class SignupViewController: UIViewController {
     private let signupButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Sign Up", for: .normal)
-        btn.backgroundColor = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+        btn.backgroundColor = .brandOrange
         btn.layer.cornerRadius = 10
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
         btn.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        btn.addDropShadow(color: .brandOrange, opacity: 0.3, radius: 6, offset: CGSize(width: 0, height: 4))
         return btn
     }()
     
     @objc private func didtapSignup(){
-        
-        let nextVC = InfoDataViewController()
-            
-            // Pass the data forward
-        nextVC.userEmail = emailTextField.text
-        nextVC.userPassword = passwordTextField.text
-        
         let signUp = OTPViewController()
+        signUp.userEmail = emailTextField.text
+        signUp.userPassword = passwordTextField.text
         navigationController?.pushViewController(signUp, animated: true)
     }
     
@@ -131,7 +193,7 @@ class SignupViewController: UIViewController {
         ])
         
         attributedString.append(NSAttributedString(string: actionText, attributes: [
-            .foregroundColor: UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0),
+            .foregroundColor: UIColor.brandOrange,
             .font: UIFont.systemFont(ofSize: 14, weight: .bold)
         ]))
         
@@ -159,7 +221,19 @@ class SignupViewController: UIViewController {
         contentView.addSubview(welcomeText)
         contentView.addSubview(joinUsText)
         
-        let stack = UIStackView(arrangedSubviews: [emailTextField, passwordTextField,confirmPasswordTextField,signupButton])
+        let emailStack = UIStackView(arrangedSubviews: [emailTextField, emailErrorLabel])
+        emailStack.axis = .vertical
+        emailStack.spacing = 4
+        
+        let rulesStack = UIStackView(arrangedSubviews: [passwordLengthLabel, passwordNumberLabel])
+        rulesStack.axis = .vertical
+        rulesStack.spacing = 2
+        
+        let passwordStack = UIStackView(arrangedSubviews: [passwordTextField, rulesStack])
+        passwordStack.axis = .vertical
+        passwordStack.spacing = 4
+        
+        let stack = UIStackView(arrangedSubviews: [emailStack, passwordStack, confirmPasswordTextField, signupButton])
         stack.axis = .vertical
         stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -246,6 +320,7 @@ class SignupViewController: UIViewController {
         signupButton.alpha = 0.5
         signupButton.backgroundColor = .gray
         
+        emailTextField.addTarget(self, action: #selector(validateFields), for: .editingChanged)
         passwordTextField.addTarget(self, action: #selector(validateFields), for: .editingChanged)
         confirmPasswordTextField.addTarget(self, action: #selector(validateFields), for: .editingChanged)
         signupButton.addTarget(self, action: #selector(didtapSignup), for: .touchUpInside)
