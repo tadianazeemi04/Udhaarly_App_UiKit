@@ -264,6 +264,7 @@ class InfoDataViewController: UIViewController {
 
             // 6. Finalize Registration locally
             UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
+            UserDefaults.standard.set(email, forKey: "currentUserEmail") // Persist for auto-fill logic
             
             // Move to Dashboard
             let dashboardVC = DashboardViewController()
