@@ -35,4 +35,10 @@ class LocalDataManager {
         try? context?.save()
     }
     
+    func fetchUser(email: String) -> LocalUser? {
+        let descriptor = FetchDescriptor<LocalUser>(predicate: #Predicate { $0.email == email })
+        return try? context?.fetch(descriptor).first
+    }
+    
 }
+
