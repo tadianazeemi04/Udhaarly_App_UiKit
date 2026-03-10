@@ -41,7 +41,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     private lazy var locationTextField = createStyledTextField(placeholder: "Search Location", icon: "mappin.and.ellipse")
     
     private let categoryFieldTitle = createTitleLabel(text: "Category")
-    private lazy var categoryMenuButton = createMenuButton(placeholder: "Select Category", icon: "chevron.right")
+    private lazy var categoryTextField = createStyledTextField(placeholder: "Select Category", icon: "chevron.right")
     
     // Product Images Section
     private let productImagesTitle = createTitleLabel(text: "Product Images")
@@ -99,7 +99,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         tf.textAlignment = .left
         return tf
     }()
-    private lazy var durationUnitMenuButton = createMenuButton(placeholder: "Days", icon: "chevron.down")
+    private lazy var durationUnitTextField = createStyledTextField(placeholder: "Days", icon: "chevron.down")
     
     // Price container removed the addPrice button
     
@@ -156,27 +156,41 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     }
 
     private func setupMenus() {
-        // Category Menu
+        // Category Menu: specific categories requested by user
         let categories = ["Software", "Home Decors", "Electronics", "Furniture", "Fashion", "Other"]
         let catActions = categories.map { cat in
-            UIAction(title: cat) { [weak self] _ in 
-                self?.categoryMenuButton.setTitle(cat, for: .normal)
-                self?.categoryMenuButton.setTitleColor(.black, for: .normal)
-            }
+            UIAction(title: cat) { [weak self] _ in self?.categoryTextField.text = cat }
         }
-        categoryMenuButton.menu = UIMenu(title: "Select Category", children: catActions)
-        categoryMenuButton.showsMenuAsPrimaryAction = true
+        categoryTextField.accessibilityLabel = "Category"
         
         // Duration Unit Menu
         let durationUnits = ["Days", "Weeks", "Months"]
         let unitActions = durationUnits.map { unit in
-            UIAction(title: unit) { [weak self] _ in 
-                self?.durationUnitMenuButton.setTitle(unit, for: .normal)
-                self?.durationUnitMenuButton.setTitleColor(.black, for: .normal)
-            }
+            UIAction(title: unit) { [weak self] _ in self?.durationUnitTextField.text = unit }
         }
-        durationUnitMenuButton.menu = UIMenu(title: "Duration Unit", children: unitActions)
-        durationUnitMenuButton.showsMenuAsPrimaryAction = true
+        
+        // Connect Taps to Menus
+        [categoryTextField, durationUnitTextField].forEach { tf in
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleDropdownTap(_:)))
+            tf.addGestureRecognizer(tap)
+            tf.isUserInteractionEnabled = true
+        }
+    }
+    
+    @objc private func handleDropdownTap(_ gesture: UITapGestureRecognizer) {
+        guard let tf = gesture.view as? UITextField else { return }
+        let button = UIButton(frame: tf.bounds)
+        button.showsMenuAsPrimaryAction = true
+        
+        if tf == categoryTextField {
+            button.menu = tf.getMenu(title: "Categories", items: ["Software", "Home Decors", "Electronics", "Furniture", "Other"]) { tf.text = $0 }
+        } else if tf == durationUnitTextField {
+            button.menu = tf.getMenu(title: "Duration Unit", items: ["Days", "Weeks", "Months"]) { tf.text = $0 }
+        }
+        
+        tf.addSubview(button)
+        button.sendActions(for: .primaryActionTriggered)
+        button.removeFromSuperview()
     }
     
     private func setupDelegates() {
@@ -254,38 +268,6 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             tf.rightViewMode = .always
         }
         return tf
-    }
-    
-    private func createMenuButton(placeholder: String, icon: String? = nil) -> UIButton {
-        let btn = UIButton(type: .system)
-        btn.setTitle(placeholder, for: .normal)
-        btn.setTitleColor(.lightGray, for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 14)
-        btn.contentHorizontalAlignment = .left
-        btn.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 35)
-        
-        btn.layer.cornerRadius = 10
-        btn.layer.borderWidth = 1.0
-        btn.layer.borderColor = UIColor.brandOrange.cgColor
-        btn.backgroundColor = .white
-        
-        btn.translatesAutoresizingMaskIntoConstraints = false
-        btn.heightAnchor.constraint(equalToConstant: 45).isActive = true
-        
-        if let iconName = icon {
-            let iv = UIImageView(image: UIImage(systemName: iconName))
-            iv.tintColor = .gray
-            iv.contentMode = .scaleAspectFit
-            iv.translatesAutoresizingMaskIntoConstraints = false
-            btn.addSubview(iv)
-            NSLayoutConstraint.activate([
-                iv.trailingAnchor.constraint(equalTo: btn.trailingAnchor, constant: -10),
-                iv.centerYAnchor.constraint(equalTo: btn.centerYAnchor),
-                iv.widthAnchor.constraint(equalToConstant: 20),
-                iv.heightAnchor.constraint(equalToConstant: 20)
-            ])
-        }
-        return btn
     }
     
     private func createLargeTextView(placeholder: String) -> UITextView {
@@ -372,7 +354,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         priceStack.spacing = 8
         priceStack.alignment = .center
         
-        let durationFieldsStack = UIStackView(arrangedSubviews: [durationNumberTextField, durationUnitMenuButton])
+        let durationFieldsStack = UIStackView(arrangedSubviews: [durationNumberTextField, durationUnitTextField])
         durationFieldsStack.axis = .horizontal
         durationFieldsStack.spacing = 10
         durationFieldsStack.alignment = .center
@@ -408,7 +390,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             locationFieldTitle,
             locationTextField,
             categoryFieldTitle,
-            categoryMenuButton,
+            categoryTextField,
             productImagesTitle,
             imageSlotsStack,
             promotionTitle,
@@ -465,7 +447,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             
             priceTextField.widthAnchor.constraint(equalToConstant: 80),
             durationNumberTextField.widthAnchor.constraint(equalToConstant: 45),
-            durationUnitMenuButton.widthAnchor.constraint(equalToConstant: 95),
+            durationUnitTextField.widthAnchor.constraint(equalToConstant: 95),
             
             descriptionTextView.topAnchor.constraint(equalTo: descContainer.topAnchor),
             descriptionTextView.leadingAnchor.constraint(equalTo: descContainer.leadingAnchor),
@@ -563,12 +545,12 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         // to ensure we get the latest data entered by the user, avoiding 'empty' values.
         let name = nameTextField.text ?? ""
         let location = locationTextField.text ?? ""
-        let category = categoryMenuButton.title(for: .normal) ?? ""
+        let category = categoryTextField.text ?? ""
         let price = Double(priceTextField.text ?? "0") ?? 0.0
         
         // Combine Duration Number and Unit
         let durationNum = durationNumberTextField.text ?? "1"
-        let durationUnit = durationUnitMenuButton.title(for: .normal) ?? "Day"
+        let durationUnit = durationUnitTextField.text ?? "Day"
         let duration = "\(durationNum) \(durationUnit)"
         
         let desc = descriptionTextView.text ?? ""
