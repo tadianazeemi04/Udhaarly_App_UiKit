@@ -228,6 +228,7 @@ class SigninViewController: UIViewController {
                 if let _ = LocalDataManager.shared.fetchUser(email: email) {
                     // Profile exists: Returning user.
                     UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
+                    UserDefaults.standard.set(email, forKey: "currentUserEmail") // Persist for auto-fill logic
                     let dashboardVC = DashboardViewController()
                     navigationController?.pushViewController(dashboardVC, animated: true)
                 } else {

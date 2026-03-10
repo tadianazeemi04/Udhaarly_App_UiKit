@@ -8,283 +8,607 @@
 import UIKit
 import PhotosUI
 
-class AddProductViewController: UIViewController, PHPickerViewControllerDelegate {
+class AddProductViewController: UIViewController, PHPickerViewControllerDelegate, UITextFieldDelegate, UITextViewDelegate {
     
+    // MARK: - Properties
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     
-    private let addProductLabel: UILabel = {
+    // Header Elements
+    private lazy var backButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        btn.tintColor = .darkGray
+        btn.addTarget(self, action: #selector(didTapBack), for: .touchUpInside)
+        return btn
+    }()
+    
+    private let headerTitleLabel: UILabel = {
         let label = UILabel()
         label.text = "Add Product"
-        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.font = .systemFont(ofSize: 20, weight: .bold)
+        label.textColor = .brandOrange
         label.textAlignment = .center
         return label
     }()
     
-    private func createLabeledField(label: String, placeholder: String, icon:String? = nil) -> UIView {
-        
-        let titleLabel = UILabel()
-        let attributedText = NSMutableAttributedString(string: label, attributes: [
-            .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-            .foregroundColor: UIColor.black
-        ])
-        
-        attributedText.append(NSAttributedString(string: "*", attributes: [
-            .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-            .foregroundColor: UIColor.red
-        ]))
-        
-        titleLabel.attributedText = attributedText
-        
-        let tf = UITextField()
-        tf.placeholder = placeholder
-        tf.layer.cornerRadius = 15
-        tf.layer.borderWidth = 1.5
-        tf.layer.borderColor = UIColor.brandOrange.cgColor
-        tf.setLeftPaddingPoints(15)
-        tf.translatesAutoresizingMaskIntoConstraints = false
-        tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
-        tf.addDropShadow()
-        
-        if let iconName = icon {
-            let iconView = UIImageView(image: UIImage(systemName: iconName))
-            iconView.tintColor = .gray
-            iconView.contentMode = .scaleAspectFit
-            
-            let container = UIView(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
-            iconView.frame = CGRect(x: 10, y: 5, width: 25, height: 20)
-            container.addSubview(iconView)
-            
-            tf.rightView = container
-            tf.rightViewMode = .always
-        }
-        
-        let labelContainer = UIStackView(arrangedSubviews: [titleLabel,tf])
-        labelContainer.axis = .vertical
-        labelContainer.spacing = 8
-        return labelContainer
-        
-    }
+    // Input Fields
+    private let nameFieldTitle = createTitleLabel(text: "Product Name")
+    private lazy var nameTextField = createStyledTextField(placeholder: "Ex. Nikon coolpix A300 digital camera")
+    private let nameCounterLabel = createCounterLabel(limit: 255)
     
-    private let coverImageView: UIImageView = {
-        let iv = UIImageView()
-        iv.backgroundColor = .systemGray6
-        iv.image = UIImage(systemName: "plus.circle")
-        iv.contentMode = .center
-        iv.tintColor = .orange
-        iv.layer.cornerRadius = 10
-        iv.clipsToBounds = true
-        iv.isUserInteractionEnabled = true
-        return iv
+    private let locationFieldTitle = createTitleLabel(text: "Location")
+    private lazy var locationTextField = createStyledTextField(placeholder: "Search Location", icon: "mappin.and.ellipse")
+    
+    private let categoryFieldTitle = createTitleLabel(text: "Category")
+    private lazy var categoryTextField = createStyledTextField(placeholder: "Select Category", icon: "chevron.right")
+    
+    // Product Images Section
+    private let productImagesTitle = createTitleLabel(text: "Product Images")
+    private lazy var imageSlotsStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = 10
+        for i in 0..<5 {
+            let slot = createPhotoSlot(index: i)
+            stack.addArrangedSubview(slot)
+        }
+        return stack
     }()
     
-    private lazy var nameField: UIStackView = createLabeledField(label: "Product Name", placeholder: "Ex: Nikon coolpix A300") as! UIStackView
-    private lazy var locationField: UIStackView = createLabeledField(label: "Lacation", placeholder: "Select Location", icon: "chevron.right") as! UIStackView
-    private lazy var categoryField: UIStackView = createLabeledField(label: "Category", placeholder: "Select Category", icon: "chevron.right") as! UIStackView
+    // Sequential Image Array (0-4: Product Images, 5: Promotion)
+    private var selectedImages: [UIImage?] = Array(repeating: nil, count: 6)
     
-    private lazy var priceField: UIStackView = createLabeledField(label: "Price (Rs.)", placeholder: "200") as! UIStackView
-    private lazy var durationField: UIStackView = createLabeledField(label: "Duration", placeholder: "1 Day") as! UIStackView
+    // Buyer Promotion Section
+    private let promotionTitle = createTitleLabel(text: "Buyer Promotion Image")
+    private lazy var promotionSlot: UIView = {
+        let view = createPhotoSlot(index: 5, isLarge: true)
+        return view
+    }()
     
-    private lazy var descriptionField: UIStackView = createLargeInputBox(label: "Product Description", placeholder: "Enter description...") as! UIStackView
-    private lazy var highlightsField: UIStackView = createLargeInputBox(label: "Product Highlights", placeholder: "Enter highlights...") as! UIStackView
-
-    private func createPriceDurationRow() -> UIView {
-        let container = UIStackView()
-        container.axis = .horizontal
-        container.distribution = .fillEqually
-        container.spacing = 16
-        
-        container.addArrangedSubview(priceField)
-        container.addArrangedSubview(durationField)
-        
-        return container
-    }
-
-    private func createLargeInputBox(label: String, placeholder: String) -> UIView {
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 8
-        
-        let titleLabel = UILabel()
-        titleLabel.text = label + "*"
-        titleLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        
-        let textView = UITextView()
-        textView.layer.cornerRadius = 15
-        textView.layer.borderWidth = 1.5
-        textView.layer.borderColor = UIColor.brandOrange.cgColor
-        textView.font = .systemFont(ofSize: 14)
-        textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
-        textView.heightAnchor.constraint(equalToConstant: 120).isActive = true
-        textView.addDropShadow()
-        
-        stack.addArrangedSubview(titleLabel)
-        stack.addArrangedSubview(textView)
-        return stack
-    }
+    private let promotionSubLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.text = "White Background Image*"
+        lbl.font = .systemFont(ofSize: 12, weight: .medium)
+        lbl.textColor = .black
+        return lbl
+    }()
+    
+    private let seeExampleButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("See Example", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 12)
+        btn.setTitleColor(.systemBlue, for: .normal)
+        return btn
+    }()
+    
+    // Price & Duration Section
+    private let priceDurationTitle = createTitleLabel(text: "Price & Duration")
+    private let priceLabel = createSubTitleLabel(text: "Price (Rs.)")
+    private lazy var priceTextField: UITextField = {
+        let tf = createStyledTextField(placeholder: "200")
+        tf.keyboardType = .numberPad
+        return tf
+    }()
+    
+    private let durationLabel = createSubTitleLabel(text: "Duration")
+    private lazy var durationNumberTextField: UITextField = {
+        let tf = createStyledTextField(placeholder: "7")
+        tf.keyboardType = .numberPad
+        tf.textAlignment = .left
+        return tf
+    }()
+    private lazy var durationUnitTextField = createStyledTextField(placeholder: "Days", icon: "chevron.down")
+    
+    // Price container removed the addPrice button
+    
+    // Description & Highlights
+    private let descriptionTitle = createTitleLabel(text: "Product Description")
+    private lazy var descriptionTextView = createLargeTextView(placeholder: "Ex. Nikon coolpix A300 digital camera")
+    private let descriptionCounterLabel = createCounterLabel(limit: 0, isStatic: false)
+    
+    private let highlightsTitle = createTitleLabel(text: "Product Highlights")
+    private lazy var highlightsTextView = createLargeTextView(placeholder: "Ex. Nikon coolpix A300 digital camera")
+    private let highlightsCounterLabel = createCounterLabel(limit: 0, isStatic: false)
     
     private let addProductButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.setTitle("Add Product →", for: .normal)
+        btn.setTitle("Add Product ", for: .normal)
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+        btn.setImage(UIImage(systemName: "arrow.right", withConfiguration: config), for: .normal)
+        btn.semanticContentAttribute = .forceRightToLeft
         btn.backgroundColor = .brandOrange
         btn.setTitleColor(.white, for: .normal)
+        btn.tintColor = .white
         btn.layer.cornerRadius = 12
         btn.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
         btn.addDropShadow(color: .brandOrange, opacity: 0.3, radius: 6, offset: CGSize(width: 0, height: 4))
         return btn
     }()
     
+    // MARK: - Lifecycle
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .white
+        setupUI()
+        setupDelegates()
+        setupLayout()
+        setupActions()
+        setupMenus()
+        autoFillUserLocation()
+        
+        let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
+        view.addGestureRecognizer(tap)
+    }
+    
+    private func autoFillUserLocation() {
+        if let email = UserDefaults.standard.string(forKey: "currentUserEmail"),
+           let user = LocalDataManager.shared.fetchUser(email: email) {
+            locationTextField.text = user.location
+        }
+    }
+    
+    private func setupUI() {
+        // Ensure price field text alignment is consistent with the dropdown theme.
+        priceTextField.textAlignment = .left
+        priceTextField.setLeftPaddingPoints(12)
+    }
+
+    private func setupMenus() {
+        // Category Menu: specific categories requested by user
+        let categories = ["Software", "Home Decors", "Electronics", "Furniture", "Fashion", "Other"]
+        let catActions = categories.map { cat in
+            UIAction(title: cat) { [weak self] _ in self?.categoryTextField.text = cat }
+        }
+        categoryTextField.accessibilityLabel = "Category"
+        
+        // Duration Unit Menu
+        let durationUnits = ["Days", "Weeks", "Months"]
+        let unitActions = durationUnits.map { unit in
+            UIAction(title: unit) { [weak self] _ in self?.durationUnitTextField.text = unit }
+        }
+        
+        // Connect Taps to Menus
+        [categoryTextField, durationUnitTextField].forEach { tf in
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleDropdownTap(_:)))
+            tf.addGestureRecognizer(tap)
+            tf.isUserInteractionEnabled = true
+        }
+    }
+    
+    @objc private func handleDropdownTap(_ gesture: UITapGestureRecognizer) {
+        guard let tf = gesture.view as? UITextField else { return }
+        let button = UIButton(frame: tf.bounds)
+        button.showsMenuAsPrimaryAction = true
+        
+        if tf == categoryTextField {
+            button.menu = tf.getMenu(title: "Categories", items: ["Software", "Home Decors", "Electronics", "Furniture", "Other"]) { tf.text = $0 }
+        } else if tf == durationUnitTextField {
+            button.menu = tf.getMenu(title: "Duration Unit", items: ["Days", "Weeks", "Months"]) { tf.text = $0 }
+        }
+        
+        tf.addSubview(button)
+        button.sendActions(for: .primaryActionTriggered)
+        button.removeFromSuperview()
+    }
+    
+    private func setupDelegates() {
+        nameTextField.delegate = self
+        descriptionTextView.delegate = self
+        highlightsTextView.delegate = self
+    }
+    
     private func setupActions() {
-        let tap = UITapGestureRecognizer(target: self, action: #selector(didTapCoverImage))
-        coverImageView.addGestureRecognizer(tap)
         addProductButton.addTarget(self, action: #selector(didTapAddProduct), for: .touchUpInside)
     }
     
-    @objc private func didTapCoverImage() {
+    @objc private func didTapBack() {
+        navigationController?.popViewController(animated: true)
+    }
+    
+    // MARK: - UI Helpers
+    
+    private static func createTitleLabel(text: String) -> UILabel {
+        let label = UILabel()
+        let attributedText = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: 16, weight: .medium),
+            .foregroundColor: UIColor.black
+        ])
+        attributedText.append(NSAttributedString(string: "*", attributes: [
+            .font: UIFont.systemFont(ofSize: 16, weight: .medium),
+            .foregroundColor: UIColor.red
+        ]))
+        label.attributedText = attributedText
+        return label
+    }
+    
+    private static func createSubTitleLabel(text: String) -> UILabel {
+        let label = UILabel()
+        let attributedText = NSMutableAttributedString(string: text, attributes: [
+            .font: UIFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: UIColor.black
+        ])
+        attributedText.append(NSAttributedString(string: "*", attributes: [
+            .font: UIFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: UIColor.red
+        ]))
+        label.attributedText = attributedText
+        return label
+    }
+    
+    private static func createCounterLabel(limit: Int, isStatic: Bool = true) -> UILabel {
+        let lbl = UILabel()
+        lbl.text = isStatic ? "0/\(limit)" : "0"
+        lbl.font = .systemFont(ofSize: 10) // Small enough to fit in the corner
+        lbl.textColor = .lightGray
+        lbl.textAlignment = .right
+        return lbl
+    }
+    
+    private func createStyledTextField(placeholder: String, icon: String? = nil) -> UITextField {
+        let tf = UITextField()
+        tf.placeholder = placeholder
+        tf.layer.cornerRadius = 10
+        tf.layer.borderWidth = 1.0
+        tf.layer.borderColor = UIColor.brandOrange.cgColor
+        tf.setLeftPaddingPoints(12)
+        tf.font = .systemFont(ofSize: 14)
+        tf.translatesAutoresizingMaskIntoConstraints = false
+        tf.heightAnchor.constraint(equalToConstant: 45).isActive = true
+        
+        if let iconName = icon {
+            let container = UIView(frame: CGRect(x: 0, y: 0, width: 35, height: 45))
+            let iv = UIImageView(image: UIImage(systemName: iconName))
+            iv.tintColor = .gray
+            iv.contentMode = .scaleAspectFit
+            iv.frame = CGRect(x: 5, y: 12.5, width: 20, height: 20)
+            container.addSubview(iv)
+            tf.rightView = container
+            tf.rightViewMode = .always
+        }
+        return tf
+    }
+    
+    private func createLargeTextView(placeholder: String) -> UITextView {
+        let tv = UITextView()
+        tv.layer.cornerRadius = 10
+        tv.layer.borderWidth = 1.0
+        tv.layer.borderColor = UIColor.brandOrange.cgColor
+        tv.font = .systemFont(ofSize: 14)
+        tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 20, right: 8)
+        tv.heightAnchor.constraint(equalToConstant: 120).isActive = true
+        return tv
+    }
+    
+    private func createPhotoSlot(index: Int, isLarge: Bool = false) -> UIImageView {
+        let iv = UIImageView()
+        iv.backgroundColor = .white
+        iv.layer.cornerRadius = 10
+        iv.layer.borderWidth = 1.0
+        iv.layer.borderColor = UIColor.brandOrange.cgColor
+        iv.contentMode = .center
+        iv.image = UIImage(systemName: "plus")
+        iv.tintColor = .gray
+        iv.isUserInteractionEnabled = true
+        iv.tag = index
+        
+        if !isLarge {
+            iv.layer.borderColor = UIColor.brandOrange.withAlphaComponent(0.4).cgColor
+        }
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(didTapSlot(_:)))
+        iv.addGestureRecognizer(tap)
+        
+        return iv
+    }
+    
+    @objc private func didTapSlot(_ sender: UITapGestureRecognizer) {
+        let tag = sender.view?.tag ?? 0
+        currentPickingIndex = tag
+        
         var config = PHPickerConfiguration()
         config.filter = .images
+        config.selectionLimit = 1
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = self
         present(picker, animated: true)
     }
     
-    // MARK: - Layout Setup
+    private var currentPickingIndex: Int = 0
+    
+    // MARK: - Layout
     private func setupLayout() {
+        view.addSubview(backButton)
+        view.addSubview(headerTitleLabel)
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         
-        // 1. Create Section Labels (Matching your design)
-        let productImagesLabel = UILabel()
-        productImagesLabel.text = "Product Images*"
-        productImagesLabel.font = .systemFont(ofSize: 16, weight: .medium)
-            
-        let promotionLabel = UILabel()
-        promotionLabel.text = "Buyer Promotion Image*"
-        promotionLabel.font = .systemFont(ofSize: 16, weight: .medium)
-            
-        // 2. Assemble the Main Stack
+        // Name Input Row
+        let nameInputContainer = UIView()
+        nameInputContainer.addSubview(nameTextField)
+        nameInputContainer.addSubview(nameCounterLabel)
+        nameTextField.translatesAutoresizingMaskIntoConstraints = false
+        nameCounterLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Promotion text stack
+        let promoTextStack = UIStackView(arrangedSubviews: [promotionSubLabel, seeExampleButton])
+        promoTextStack.axis = .vertical
+        promoTextStack.alignment = .leading
+        promoTextStack.spacing = 2
+        
+        let promoHorizontal = UIStackView(arrangedSubviews: [promotionSlot, promoTextStack])
+        promoHorizontal.axis = .horizontal
+        promoHorizontal.alignment = .center
+        promoHorizontal.spacing = 15
+        promotionSlot.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Price Duration Container
+        let priceStack = UIStackView(arrangedSubviews: [priceLabel, priceTextField])
+        priceStack.axis = .horizontal
+        priceStack.spacing = 8
+        priceStack.alignment = .center
+        
+        let durationFieldsStack = UIStackView(arrangedSubviews: [durationNumberTextField, durationUnitTextField])
+        durationFieldsStack.axis = .horizontal
+        durationFieldsStack.spacing = 10
+        durationFieldsStack.alignment = .center
+        
+        let durationStack = UIStackView(arrangedSubviews: [durationLabel, durationFieldsStack])
+        durationStack.axis = .horizontal
+        durationStack.spacing = 8
+        durationStack.alignment = .center
+        
+        let priceDurationRow = UIStackView(arrangedSubviews: [priceStack, durationStack])
+        priceDurationRow.axis = .horizontal
+        priceDurationRow.distribution = .fillProportionally
+        priceDurationRow.spacing = 20
+        
+        // Price duration row setup complete
+        
+        // Large boxes with relative counters
+        let descContainer = UIView()
+        descContainer.addSubview(descriptionTextView)
+        descContainer.addSubview(descriptionCounterLabel)
+        descriptionTextView.translatesAutoresizingMaskIntoConstraints = false
+        descriptionCounterLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let highlightsContainer = UIView()
+        highlightsContainer.addSubview(highlightsTextView)
+        highlightsContainer.addSubview(highlightsCounterLabel)
+        highlightsTextView.translatesAutoresizingMaskIntoConstraints = false
+        highlightsCounterLabel.translatesAutoresizingMaskIntoConstraints = false
+        
         let mainStack = UIStackView(arrangedSubviews: [
-            addProductLabel,
-            nameField,
-            locationField,
-            categoryField,
-            productImagesLabel,
-            // (Optional: Insert your horizontal CollectionView for 5 images here later)
-            promotionLabel,
-            coverImageView,
-            createPriceDurationRow(),
-            descriptionField,
-            highlightsField,
+            nameFieldTitle,
+            nameInputContainer,
+            locationFieldTitle,
+            locationTextField,
+            categoryFieldTitle,
+            categoryTextField,
+            productImagesTitle,
+            imageSlotsStack,
+            promotionTitle,
+            promoHorizontal,
+            priceDurationTitle,
+            priceDurationRow,
+            descriptionTitle,
+            descContainer,
+            highlightsTitle,
+            highlightsContainer,
             addProductButton
         ])
-            
         mainStack.axis = .vertical
-        mainStack.spacing = 20
+        mainStack.spacing = 15
         mainStack.translatesAutoresizingMaskIntoConstraints = false
-            
         contentView.addSubview(mainStack)
-            
-        // 3. Set Constraints
+        
         NSLayoutConstraint.activate([
-            // ScrollView Constraints
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+            
+            headerTitleLabel.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
+            headerTitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            scrollView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 20),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            // ContentView Constraints
             contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-                
-            // Cover Image Height
-            coverImageView.heightAnchor.constraint(equalToConstant: 150),
-                
-            // Add Product Button Height
-            addProductButton.heightAnchor.constraint(equalToConstant: 55),
-                
-            // Main Stack Constraints
-            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            
+            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor),
             mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+            mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30),
+            
+            nameTextField.topAnchor.constraint(equalTo: nameInputContainer.topAnchor),
+            nameTextField.leadingAnchor.constraint(equalTo: nameInputContainer.leadingAnchor),
+            nameTextField.trailingAnchor.constraint(equalTo: nameInputContainer.trailingAnchor),
+            nameTextField.bottomAnchor.constraint(equalTo: nameInputContainer.bottomAnchor),
+            // Position counter at the bottom-right inside the text field
+            nameCounterLabel.trailingAnchor.constraint(equalTo: nameTextField.trailingAnchor, constant: -12),
+            nameCounterLabel.bottomAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: -5),
+            
+            imageSlotsStack.heightAnchor.constraint(equalToConstant: 65),
+            promotionSlot.widthAnchor.constraint(equalToConstant: 70),
+            promotionSlot.heightAnchor.constraint(equalToConstant: 70),
+            
+            priceDurationRow.trailingAnchor.constraint(equalTo: mainStack.trailingAnchor),
+            
+            priceTextField.widthAnchor.constraint(equalToConstant: 80),
+            durationNumberTextField.widthAnchor.constraint(equalToConstant: 45),
+            durationUnitTextField.widthAnchor.constraint(equalToConstant: 95),
+            
+            descriptionTextView.topAnchor.constraint(equalTo: descContainer.topAnchor),
+            descriptionTextView.leadingAnchor.constraint(equalTo: descContainer.leadingAnchor),
+            descriptionTextView.trailingAnchor.constraint(equalTo: descContainer.trailingAnchor),
+            descriptionTextView.bottomAnchor.constraint(equalTo: descContainer.bottomAnchor),
+            descriptionCounterLabel.trailingAnchor.constraint(equalTo: descriptionTextView.trailingAnchor, constant: -12),
+            descriptionCounterLabel.bottomAnchor.constraint(equalTo: descriptionTextView.bottomAnchor, constant: -8),
+            
+            highlightsTextView.topAnchor.constraint(equalTo: highlightsContainer.topAnchor),
+            highlightsTextView.leadingAnchor.constraint(equalTo: highlightsContainer.leadingAnchor),
+            highlightsTextView.trailingAnchor.constraint(equalTo: highlightsContainer.trailingAnchor),
+            highlightsTextView.bottomAnchor.constraint(equalTo: highlightsContainer.bottomAnchor),
+            highlightsCounterLabel.trailingAnchor.constraint(equalTo: highlightsTextView.trailingAnchor, constant: -12),
+            highlightsCounterLabel.bottomAnchor.constraint(equalTo: highlightsTextView.bottomAnchor, constant: -8),
+            
+            addProductButton.heightAnchor.constraint(equalToConstant: 50)
         ])
     }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .white
-        setupLayout()
-        setupActions()
+    
+    // MARK: - Delegates
+    
+    /// Limits the Product Name to 255 characters and updates the counter label in real-time.
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == nameTextField {
+            let currentText = textField.text ?? ""
+            guard let stringRange = Range(range, in: currentText) else { return false }
+            let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
             
-        // Hide keyboard when tapping outside
-        let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
-        view.addGestureRecognizer(tap)
-            
+            // Strictly enforce the 255 character limit as per database/design requirements.
+            if updatedText.count <= 255 {
+                nameCounterLabel.text = "\(updatedText.count)/255"
+                return true
+            }
+            return false
+        }
+        return true
     }
     
-    // MARK: - PHPickerViewControllerDelegate
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)
+    /// Updates the dynamic counter for Description and Highlights as the user types.
+    func textViewDidChange(_ textView: UITextView) {
+        if textView == descriptionTextView {
+            descriptionCounterLabel.text = "\(textView.text.count)"
+        } else if textView == highlightsTextView {
+            highlightsTextView.text = textView.text // Force update if needed
+            highlightsCounterLabel.text = "\(textView.text.count)"
+        }
+    }
+    
+    /// Handles the image selection from the PHPicker and assigns it to the correct slot index.
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        
+        guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else { return }
+        
+        provider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
+            guard let self = self, let image = image as? UIImage else { return }
             
-            guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else { return }
-            
-            provider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
-                guard let image = image as? UIImage else { return }
-                DispatchQueue.main.async {
-                    // Set the cover image and change mode to fit nicely
-                    self?.coverImageView.image = image
-                    self?.coverImageView.contentMode = .scaleAspectFill
+            DispatchQueue.main.async {
+                // Sequential logic: filling the first empty slot
+                if self.currentPickingIndex == 5 {
+                    self.updateSlotUI(index: 5, image: image)
+                } else {
+                    if let firstEmptyIndex = self.selectedImages.prefix(5).firstIndex(where: { $0 == nil }) {
+                        self.updateSlotUI(index: firstEmptyIndex, image: image)
+                    } else {
+                        // All filled? Replace specifically tapped index
+                        self.updateSlotUI(index: self.currentPickingIndex, image: image)
+                    }
                 }
             }
         }
-        
-        // MARK: - Save Data Logic
-        @objc private func didTapAddProduct() {
-            // 1. Extract values (assuming you add tags or outlets to your fields)
-            let name = (nameField.arrangedSubviews[1] as? UITextField)?.text ?? ""
-            let location = (locationField.arrangedSubviews[1] as? UITextField)?.text ?? ""
-            let category = (categoryField.arrangedSubviews[1] as? UITextField)?.text ?? ""
-            let priceString = (priceField.arrangedSubviews.compactMap { $0 as? UITextField }.first)?.text ?? "0"
-            let duration = (durationField.arrangedSubviews.compactMap { $0 as? UITextField }.first)?.text ?? "1 Day"
-            let desc = (descriptionField.arrangedSubviews.compactMap { $0 as? UITextView }.first)?.text ?? ""
-            let highlights = (highlightsField.arrangedSubviews.compactMap { $0 as? UITextView }.first)?.text ?? ""
-            let price = Double(priceString) ?? 0.0
-            
-            // 2. Convert Image to Data for SwiftData
-            let imageData = coverImageView.image?.jpegData(compressionQuality: 0.8)
-            
-            // 3. Create the Model Instance
-            // (Make sure your LocalProduct model is created in your Models folder)
-            // Create the product (Notice: no 'id' needed now!)
-                let newProduct = LocalProduct(
-                    name: name,
-                    location: location,
-                    category: category.isEmpty ? "General" : category,
-                    price: price,
-                    duration: duration,
-                    productDescription: desc,
-                    highlights: highlights,
-                    coverImage: imageData
-                )
-                
-                // Save to SwiftData
-                LocalDataManager.shared.saveProduct(product: newProduct)
-                
-                print("✅ Successfully saved: \(newProduct.name)")
-            
-            
-            print("Saving Product: \(name) for Rs. \(price)")
-            navigationController?.popViewController(animated: true)
-        }
+    }
     
+    private func updateSlotUI(index: Int, image: UIImage) {
+        self.selectedImages[index] = image
+        if let slot = self.findSlot(for: index) as? UIImageView {
+            slot.image = image
+            slot.contentMode = .scaleAspectFill
+            slot.clipsToBounds = true
+            slot.layer.borderColor = UIColor.brandOrange.cgColor
+        }
+    }
+    
+    /// Helper to find the correct UIView based on the registered picking index.
+    private func findSlot(for index: Int) -> UIView? {
+        if index == 5 { return promotionSlot }
+        return imageSlotsStack.arrangedSubviews[index]
+    }
+    
+    // MARK: - Save Logics
+    
+    /// Collects all UI input data, validates types, and persists a new LocalProduct to SwiftData.
+    @objc private func didTapAddProduct() {
+        // [Logic Fix]: We use explicit field references (nameTextField, descriptionTextView, etc.)
+        // to ensure we get the latest data entered by the user, avoiding 'empty' values.
+        let name = nameTextField.text ?? ""
+        let location = locationTextField.text ?? ""
+        let category = categoryTextField.text ?? ""
+        let price = Double(priceTextField.text ?? "0") ?? 0.0
+        
+        // Combine Duration Number and Unit
+        let durationNum = durationNumberTextField.text ?? "1"
+        let durationUnit = durationUnitTextField.text ?? "Day"
+        let duration = "\(durationNum) \(durationUnit)"
+        
+        let desc = descriptionTextView.text ?? ""
+        let highlights = highlightsTextView.text ?? ""
+        
+        // Sequential collection: Priority to index 0, then 5 (promotion).
+        let mainImage = selectedImages.compactMap { $0 }.first
+        let imageData = mainImage?.jpegData(compressionQuality: 0.8)
+        
+        // Create the SwiftData model instance.
+        let newProduct = LocalProduct(
+            name: name,
+            location: location,
+            category: category.isEmpty ? "General" : category,
+            price: price,
+            duration: duration,
+            productDescription: desc,
+            highlights: highlights,
+            coverImage: imageData
+        )
+        
+        // Save to local container.
+        LocalDataManager.shared.saveProduct(product: newProduct)
+        
+        // Feedback loop: Notify the user and pop back to the dashboard/previous list.
+        let alert = UIAlertController(title: "Success", message: "Product '\(name)' added successfully!", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
+            self.navigationController?.popViewController(animated: true)
+        }))
+        present(alert, animated: true)
+    }
 }
 
-#Preview {
-    AddProductViewController()
+
+import SwiftUI
+
+struct AddProductView_Preview: PreviewProvider {
+    static var previews: some View {
+        AddProductViewControllerRepresentable()
+            .edgesIgnoringSafeArea(.all)
+    }
 }
+
+struct AddProductViewControllerRepresentable: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> AddProductViewController {
+        return AddProductViewController()
+    }
+    
+    func updateUIViewController(_ uiViewController: AddProductViewController, context: Context) {}
+}
+
+// MARK: - Dropdown Helper Extension
+extension UITextField {
+    func getMenu(title: String, items: [String], selection: @escaping (String) -> Void) -> UIMenu {
+        let actions = items.map { item in
+            UIAction(title: item) { _ in selection(item) }
+        }
+        return UIMenu(title: title, children: actions)
+    }
+}
+
