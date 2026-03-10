@@ -45,6 +45,15 @@ class InfoDataViewController: UIViewController {
     }()
     
     
+    private let profileImageLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Profile Picture"
+        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.textColor = .black
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     private let profileImageView: UIImageView = {
         let iv = UIImageView()
         iv.image = UIImage(systemName: "person.circle.fill")
@@ -83,6 +92,8 @@ class InfoDataViewController: UIViewController {
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
         tf.addDropShadow()
+        tf.autocorrectionType = .no
+        tf.spellCheckingType = .no
         
         if let iconName = icon {
             let iconView = UIImageView(image: UIImage(systemName: iconName))
@@ -128,6 +139,7 @@ class InfoDataViewController: UIViewController {
         contentView.addSubview(logoImageUI)
         contentView.addSubview(fewStepsText)
         contentView.addSubview(StepsText)
+        contentView.addSubview(profileImageLabel)
         contentView.addSubview(profileImageView)
         
         
@@ -170,7 +182,10 @@ class InfoDataViewController: UIViewController {
             StepsText.topAnchor.constraint(equalTo: fewStepsText.bottomAnchor, constant: 0),
             StepsText.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             
-            profileImageView.topAnchor.constraint(equalTo: StepsText.bottomAnchor, constant: 20),
+            profileImageLabel.topAnchor.constraint(equalTo: StepsText.bottomAnchor, constant: 20),
+            profileImageLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            
+            profileImageView.topAnchor.constraint(equalTo: profileImageLabel.bottomAnchor, constant: 10),
             profileImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             
             stack.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 10),
@@ -208,6 +223,16 @@ class InfoDataViewController: UIViewController {
         dataPicker.datePickerMode = .date
         dataPicker.preferredDatePickerStyle = .wheels
         
+        // Set date range limitations
+        var components = DateComponents()
+        components.year = 1960
+        components.month = 1
+        components.day = 1
+        let minDate = Calendar.current.date(from: components)
+        
+        dataPicker.minimumDate = minDate
+        dataPicker.maximumDate = Date() // Today's date
+        
         let toolbar = UIToolbar()
         toolbar.sizeToFit()
         
@@ -229,22 +254,74 @@ class InfoDataViewController: UIViewController {
         if let stack = dobField as? UIStackView,
            let textField = stack.arrangedSubviews.last as? UITextField {
             textField.text = formatter.string(from: dataPicker.date)
+            validateFields()
         }
         view.endEditing(true)
     }
     
-    @objc private func didTapStart() {
-        // Convert the current image in the view to Data
-        let imageData = profileImageView.image?.jpegData(compressionQuality: 0.5)
+    private func showAlert(message: String) {
+        let alert = UIAlertController(title: "Registration", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
     
-        guard let email = userEmail else { return }
-
-            // 2. Extract profile data from your UIStackViews
+    @objc private func validateFields() {
         let fName = (firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let lName = (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let loc = (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let bday = (dobField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         
+        let allFieldsFilled = !fName.isEmpty && !lName.isEmpty && !loc.isEmpty && !bday.isEmpty
+        
+        // Calculate age
+        let calendar = Calendar.current
+        let now = Date()
+        let ageComponents = calendar.dateComponents([.year], from: dataPicker.date, to: now)
+        let age = ageComponents.year ?? 0
+        let isAgeValid = age >= 16
+        
+        let isValid = allFieldsFilled && isAgeValid
+        
+        // Keep button enabled but visually distinguish it
+        startButtun.alpha = isValid ? 1.0 : 0.7
+    }
+    
+    @objc private func didTapStart() {
+        // Validation logic
+        let fName = (firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let lName = (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let loc = (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let bday = (dobField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        
+        // 1. Profile Picture Check
+        let isDefaultImage = profileImageView.image == UIImage(systemName: "person.circle.fill")
+        if isDefaultImage {
+            showAlert(message: "Please upload a profile picture to continue.")
+            return
+        }
+        
+        // 2. Text Fields Check
+        if fName.isEmpty || lName.isEmpty || loc.isEmpty || bday.isEmpty {
+            showAlert(message: "All fields are required. Please fill in all information.")
+            return
+        }
+        
+        // 3. Age Restriction Check
+        let calendar = Calendar.current
+        let now = Date()
+        let ageComponents = calendar.dateComponents([.year], from: dataPicker.date, to: now)
+        let age = ageComponents.year ?? 0
+        
+        if age < 16 {
+            showAlert(message: "You must be at least 16 years old to use this app.")
+            return
+        }
+
+        // Convert the current image in the view to Data
+        let imageData = profileImageView.image?.jpegData(compressionQuality: 0.5)
+    
+        guard let email = userEmail else { return }
+
         let newUser = LocalUser(
             email: self.userEmail ?? "",
             firstName: fName,
@@ -285,9 +362,18 @@ class InfoDataViewController: UIViewController {
         
         startButtun.addTarget(self, action: #selector(didTapStart), for: .touchUpInside)
         
+        // Add targets for real-time validation
+        [(firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
+         (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
+         (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first].forEach {
+            $0?.addTarget(self, action: #selector(validateFields), for: .editingChanged)
+        }
+        
         let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
         view.addGestureRecognizer(tap)
         
+        // Initial validation check
+        validateFields()
     }
     
 }

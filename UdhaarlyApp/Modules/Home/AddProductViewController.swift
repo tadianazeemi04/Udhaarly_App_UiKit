@@ -88,6 +88,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     private let priceLabel = createSubTitleLabel(text: "Price (Rs.)")
     private lazy var priceTextField: UITextField = {
         let tf = createStyledTextField(placeholder: "200")
+        tf.heightAnchor.constraint(equalToConstant: 30).isActive = true
         tf.keyboardType = .numberPad
         return tf
     }()
@@ -96,10 +97,15 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     private lazy var durationNumberTextField: UITextField = {
         let tf = createStyledTextField(placeholder: "7")
         tf.keyboardType = .numberPad
+        tf.heightAnchor.constraint(equalToConstant: 30).isActive = true
         tf.textAlignment = .left
         return tf
     }()
-    private lazy var durationUnitMenuButton = createMenuButton(placeholder: "Days", icon: "chevron.down")
+    private lazy var durationUnitMenuButton: UIButton = {
+        let btn = createMenuButton(placeholder: "Days", icon: "chevron.down")
+        btn.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        return btn
+    }()
     
     // Price container removed the addPrice button
     
@@ -136,10 +142,35 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         setupLayout()
         setupActions()
         setupMenus()
+        setupKeyboardHandling()
         autoFillUserLocation()
         
         let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
         view.addGestureRecognizer(tap)
+    }
+    
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+        
+        // Add padding to the bottom of scroll view so user can scroll to bottom-most fields
+        let contentInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: keyboardFrame.height + 20, right: 0.0)
+        scrollView.contentInset = contentInsets
+        scrollView.scrollIndicatorInsets = contentInsets
+    }
+    
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        scrollView.contentInset = .zero
+        scrollView.scrollIndicatorInsets = .zero
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func autoFillUserLocation() {
@@ -173,14 +204,34 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             UIAction(title: unit) { [weak self] _ in 
                 self?.durationUnitMenuButton.setTitle(unit, for: .normal)
                 self?.durationUnitMenuButton.setTitleColor(.black, for: .normal)
+                // Re-validate current number when unit changes
+                self?.validateDuration()
             }
         }
         durationUnitMenuButton.menu = UIMenu(title: "Duration Unit", children: unitActions)
         durationUnitMenuButton.showsMenuAsPrimaryAction = true
     }
     
+    private func validateDuration() {
+        let unit = durationUnitMenuButton.title(for: .normal) ?? "Days"
+        let currentText = durationNumberTextField.text ?? ""
+        guard let value = Int(currentText) else { return }
+        
+        var maxLimit = 30
+        if unit == "Weeks" {
+            maxLimit = 4
+        } else if unit == "Months" {
+            maxLimit = 1
+        }
+        
+        if value > maxLimit {
+            durationNumberTextField.text = "\(maxLimit)"
+        }
+    }
+    
     private func setupDelegates() {
         nameTextField.delegate = self
+        durationNumberTextField.delegate = self
         descriptionTextView.delegate = self
         highlightsTextView.delegate = self
     }
@@ -253,6 +304,10 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             tf.rightView = container
             tf.rightViewMode = .always
         }
+        
+        tf.autocorrectionType = .no
+        tf.spellCheckingType = .no
+        
         return tf
     }
     
@@ -296,6 +351,10 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         tv.font = .systemFont(ofSize: 14)
         tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 20, right: 8)
         tv.heightAnchor.constraint(equalToConstant: 120).isActive = true
+        
+        tv.autocorrectionType = .no
+        tv.spellCheckingType = .no
+        
         return tv
     }
     
@@ -383,9 +442,9 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         durationStack.alignment = .center
         
         let priceDurationRow = UIStackView(arrangedSubviews: [priceStack, durationStack])
-        priceDurationRow.axis = .horizontal
+        priceDurationRow.axis = .vertical
         priceDurationRow.distribution = .fillProportionally
-        priceDurationRow.spacing = 20
+        priceDurationRow.spacing = 10
         
         // Price duration row setup complete
         
@@ -500,6 +559,33 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
                 return true
             }
             return false
+        } else if textField == durationNumberTextField {
+            // Only allow numbers
+            let allowedCharacters = CharacterSet.decimalDigits
+            let characterSet = CharacterSet(charactersIn: string)
+            if !allowedCharacters.isSuperset(of: characterSet) {
+                return false
+            }
+            
+            let currentText = textField.text ?? ""
+            guard let stringRange = Range(range, in: currentText) else { return false }
+            let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
+            
+            // If empty, allow it (user might be deleting)
+            if updatedText.isEmpty { return true }
+            
+            // Validate limit based on unit
+            guard let value = Int(updatedText) else { return false }
+            let unit = durationUnitMenuButton.title(for: .normal) ?? "Days"
+            
+            var maxLimit = 30
+            if unit == "Weeks" {
+                maxLimit = 4
+            } else if unit == "Months" {
+                maxLimit = 1
+            }
+            
+            return value <= maxLimit
         }
         return true
     }
@@ -559,22 +645,49 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     
     /// Collects all UI input data, validates types, and persists a new LocalProduct to SwiftData.
     @objc private func didTapAddProduct() {
-        // [Logic Fix]: We use explicit field references (nameTextField, descriptionTextView, etc.)
-        // to ensure we get the latest data entered by the user, avoiding 'empty' values.
-        let name = nameTextField.text ?? ""
-        let location = locationTextField.text ?? ""
+        // 1. Basic Data Extraction
+        let name = nameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let location = locationTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let category = categoryMenuButton.title(for: .normal) ?? ""
-        let price = Double(priceTextField.text ?? "0") ?? 0.0
+        let priceText = priceTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let durationNum = durationNumberTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let durationUnit = durationUnitMenuButton.title(for: .normal) ?? ""
+        let desc = descriptionTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let highlights = highlightsTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         
-        // Combine Duration Number and Unit
-        let durationNum = durationNumberTextField.text ?? "1"
-        let durationUnit = durationUnitMenuButton.title(for: .normal) ?? "Day"
+        // 2. Validation Logic
+        
+        // --- Text Fields ---
+        if name.isEmpty || location.isEmpty || priceText.isEmpty || durationNum.isEmpty || desc.isEmpty || highlights.isEmpty {
+            showAlert(title: "Missing Information", message: "All text fields are required. Please fill in all information.")
+            return
+        }
+        
+        // --- Category ---
+        if category == "Select Category" || category.isEmpty {
+            showAlert(title: "Select Category", message: "Please select a category for your product.")
+            return
+        }
+        
+        // --- Images ---
+        let hasProductImage = selectedImages.prefix(5).contains { $0 != nil }
+        let hasPromotionImage = selectedImages[5] != nil
+        
+        if !hasProductImage {
+            showAlert(title: "Product Image", message: "Please add at least one product image.")
+            return
+        }
+        
+        if !hasPromotionImage {
+            showAlert(title: "Promotion Image", message: "Please upload a buyer promotion image (white background).")
+            return
+        }
+        
+        // 3. Data Processing
+        let price = Double(priceText) ?? 0.0
         let duration = "\(durationNum) \(durationUnit)"
         
-        let desc = descriptionTextView.text ?? ""
-        let highlights = highlightsTextView.text ?? ""
-        
-        // Sequential collection: Priority to index 0, then 5 (promotion).
+        // Sequential collection: Priority to index 0.
         let mainImage = selectedImages.compactMap { $0 }.first
         let imageData = mainImage?.jpegData(compressionQuality: 0.8)
         
@@ -582,7 +695,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         let newProduct = LocalProduct(
             name: name,
             location: location,
-            category: category.isEmpty ? "General" : category,
+            category: category,
             price: price,
             duration: duration,
             productDescription: desc,
@@ -593,11 +706,17 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         // Save to local container.
         LocalDataManager.shared.saveProduct(product: newProduct)
         
-        // Feedback loop: Notify the user and pop back to the dashboard/previous list.
+        // Feedback loop
         let alert = UIAlertController(title: "Success", message: "Product '\(name)' added successfully!", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
             self.navigationController?.popViewController(animated: true)
         }))
+        present(alert, animated: true)
+    }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
