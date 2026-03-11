@@ -134,6 +134,11 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     }()
     
     // MARK: - Lifecycle
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
@@ -241,7 +246,30 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     }
     
     @objc private func didTapBack() {
-        navigationController?.popViewController(animated: true)
+        // Check if any significant fields are filled to avoid unnecessary alerts
+        let name = nameTextField.text ?? ""
+        let location = locationTextField.text ?? ""
+        let description = descriptionTextView.text ?? ""
+        let hasImages = selectedImages.compactMap { $0 }.count > 0
+        
+        if !name.isEmpty || !location.isEmpty || !description.isEmpty || hasImages {
+            let alert = UIAlertController(title: "Discard Changes?", message: "If you go back now, your product details will not be saved.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Discard", style: .destructive, handler: { [weak self] _ in
+                self?.performBackNavigation()
+            }))
+            present(alert, animated: true)
+        } else {
+            performBackNavigation()
+        }
+    }
+    
+    private func performBackNavigation() {
+        if navigationController?.viewControllers.count == 1 {
+            dismiss(animated: true)
+        } else {
+            navigationController?.popViewController(animated: true)
+        }
     }
     
     // MARK: - UI Helpers
@@ -396,11 +424,17 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     
     // MARK: - Layout
     private func setupLayout() {
-        view.addSubview(backButton)
-        view.addSubview(headerTitleLabel)
+        let headerContainer = UIView()
+        headerContainer.backgroundColor = .white
+        headerContainer.addDropShadow(color: .black, opacity: 0.1, radius: 5, offset: CGSize(width: 0, height: 2))
+        
+        view.addSubview(headerContainer)
+        headerContainer.addSubview(backButton)
+        headerContainer.addSubview(headerTitleLabel)
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
+        headerContainer.translatesAutoresizingMaskIntoConstraints = false
         backButton.translatesAutoresizingMaskIntoConstraints = false
         headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -446,8 +480,6 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         priceDurationRow.distribution = .fillProportionally
         priceDurationRow.spacing = 10
         
-        // Price duration row setup complete
-        
         // Large boxes with relative counters
         let descContainer = UIView()
         descContainer.addSubview(descriptionTextView)
@@ -486,13 +518,18 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         contentView.addSubview(mainStack)
         
         NSLayoutConstraint.activate([
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+            headerContainer.topAnchor.constraint(equalTo: view.topAnchor),
+            headerContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            headerContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            headerContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
             
-            headerTitleLabel.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
-            headerTitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            backButton.centerYAnchor.constraint(equalTo: headerContainer.safeAreaLayoutGuide.centerYAnchor),
+            backButton.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: 15),
             
-            scrollView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 20),
+            headerTitleLabel.centerYAnchor.constraint(equalTo: headerContainer.safeAreaLayoutGuide.centerYAnchor),
+            headerTitleLabel.centerXAnchor.constraint(equalTo: headerContainer.centerXAnchor),
+            
+            scrollView.topAnchor.constraint(equalTo: headerContainer.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -503,7 +540,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             
-            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor),
+            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
             mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30),
@@ -512,7 +549,6 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             nameTextField.leadingAnchor.constraint(equalTo: nameInputContainer.leadingAnchor),
             nameTextField.trailingAnchor.constraint(equalTo: nameInputContainer.trailingAnchor),
             nameTextField.bottomAnchor.constraint(equalTo: nameInputContainer.bottomAnchor),
-            // Position counter at the bottom-right inside the text field
             nameCounterLabel.trailingAnchor.constraint(equalTo: nameTextField.trailingAnchor, constant: -12),
             nameCounterLabel.bottomAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: -5),
             
@@ -521,7 +557,6 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             promotionSlot.heightAnchor.constraint(equalToConstant: 70),
             
             priceDurationRow.trailingAnchor.constraint(equalTo: mainStack.trailingAnchor),
-            
             priceTextField.widthAnchor.constraint(equalToConstant: 80),
             durationNumberTextField.widthAnchor.constraint(equalToConstant: 45),
             durationUnitMenuButton.widthAnchor.constraint(equalToConstant: 95),
@@ -709,7 +744,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         // Feedback loop
         let alert = UIAlertController(title: "Success", message: "Product '\(name)' added successfully!", preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            self.navigationController?.popViewController(animated: true)
+            self.didTapBack()
         }))
         present(alert, animated: true)
     }

@@ -228,8 +228,8 @@ class SigninViewController: UIViewController {
                 if let _ = LocalDataManager.shared.fetchUser(email: email) {
                     // Profile exists: Returning user.
                     UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
-                    let dashboardVC = DashboardViewController()
-                    navigationController?.pushViewController(dashboardVC, animated: true)
+                    let tabBar = MainTabBarController()
+                    navigationController?.setViewControllers([tabBar], animated: true)
                 } else {
                     // Profile missing: Credential-only user (e.g. registered but didn't finish Info setup).
                     // Navigate to InfoData to complete registration.
