@@ -28,13 +28,21 @@ class DashboardViewController: UIViewController {
         return btn
     }()
 
+    private var gradientLayer: CAGradientLayer?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
+        gradientLayer = view.applyThemeGradient()
         
         setupLayout()
         
         addProductButton.addTarget(self, action: #selector(didTapAddProduct), for: .touchUpInside)
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        gradientLayer?.frame = view.bounds
     }
     
     private func setupLayout() {

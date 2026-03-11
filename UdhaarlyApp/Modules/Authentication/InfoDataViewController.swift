@@ -343,9 +343,9 @@ class InfoDataViewController: UIViewController {
             UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
             UserDefaults.standard.set(email, forKey: "currentUserEmail") // Persist for auto-fill logic
         
-            // Move to Dashboard
-            let dashboardVC = DashboardViewController()
-            self.navigationController?.pushViewController(dashboardVC, animated: true)
+            // Move to Main Tab Bar
+            let tabBar = MainTabBarController()
+            self.navigationController?.setViewControllers([tabBar], animated: true)
     }
 
     override func viewDidLoad() {

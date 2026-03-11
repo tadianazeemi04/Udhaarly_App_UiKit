@@ -16,13 +16,18 @@ class LocalDataManager {
     
     init() {
         do {
-            container = try ModelContainer(for: LocalUser.self)
+            container = try ModelContainer(for: LocalUser.self, LocalProduct.self)
             if let container = container {
                 context = ModelContext(container)
             }
         } catch {
             print("Failed to initialize swiftdata: \(error)")
         }
+    }
+    
+    func fetchProducts() -> [LocalProduct] {
+        let descriptor = FetchDescriptor<LocalProduct>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        return (try? context?.fetch(descriptor)) ?? []
     }
     
     func saveUser(user: LocalUser) {

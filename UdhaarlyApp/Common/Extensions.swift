@@ -24,5 +24,19 @@ extension UIView {
         self.layer.shadowRadius = radius
         self.layer.masksToBounds = false
     }
-}
 
+    func applyThemeGradient() -> CAGradientLayer {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 108/255, green: 92/255, blue: 231/255, alpha: 0.15).cgColor, // Soft Purple
+            UIColor(red: 255/255, green: 126/255, blue: 95/255, alpha: 0.1).cgColor,  // Soft Peach
+            UIColor.white.cgColor
+        ]
+        gradientLayer.locations = [0.0, 0.4, 0.8]
+        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1.0, y: 1)
+        gradientLayer.frame = self.bounds
+        self.layer.insertSublayer(gradientLayer, at: 0)
+        return gradientLayer
+    }
+}
