@@ -30,7 +30,7 @@ class MainTabBarController: UITabBarController {
     private func setupTabs() {
         let homeVC = DashboardViewController()
         let chatsVC = ChatsViewController()
-        let userVC = UIViewController() // Placeholder for now
+        let userVC = UserSettingViewController()
         let myAdsVC = MyAdsViewController()
 
         homeVC.tabBarItem = UITabBarItem(title: "Home", image: UIImage(systemName: "house"), tag: 0)

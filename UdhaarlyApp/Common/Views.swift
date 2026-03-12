@@ -41,3 +41,20 @@ class GradientCardView: UIView {
         gradientLayer.cornerRadius = layer.cornerRadius
     }
 }
+
+class GradientView: UIView {
+    var colors: [UIColor] = [] {
+        didSet { updateGradient() }
+    }
+    
+    override class var layerClass: AnyClass {
+        return CAGradientLayer.self
+    }
+    
+    private func updateGradient() {
+        guard let gradientLayer = layer as? CAGradientLayer else { return }
+        gradientLayer.colors = colors.map { $0.cgColor }
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
+    }
+}
