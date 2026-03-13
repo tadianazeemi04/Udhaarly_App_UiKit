@@ -1,25 +1,26 @@
-# 🚀 Recent Updates (March 11, 2026)
+# 🚀 Recent Updates (March 13, 2026)
 
-Today’s updates represent a major milestone in transforming **Udhaarly** into a professional-grade marketplace. We focused on three core pillars: **Visual Excellence**, **Data Integrity**, and **User Safety**.
+Today’s session focused on expanding the **Pro Features** ecosystem by implementing a high-fidelity **Pricing Plans & Subscription** module. We shifted from static settings to an interactive monetization flow.
 
 ---
 
-### 🎨 Dashboard & UI Overhaul
-The placeholder home screen has been fully replaced with a multi-sectioned, premium Dashboard based on high-fidelity designs:
-- **Search & Discovery**: Integrated a modern search header with location context and a clean search interface.
-- **Category System**: Implemented a horizontal scrolling category section using custom circular icons (Mobile, Fashion, Home, Electronics, Books).
-- **Premium Experience**: Built a dark-themed **Udhaarly Premium** promotional banner with high-contrast typography and calls to action.
-- **Recent Ads Grid**: A dynamic two-column grid that displays real marketplace listings with high-fidelity, grid-optimized product cards.
+### 💳 Subscription & Pricing Plans Module
+A brand new, pixel-perfect subscription experience was built from the ground up:
+- **Premium Header**: Designed an immersive gradient header (`#FF6700` to `#E90007`) featuring a custom crown icon to denote premium status.
+- **Interactive Plan Cards**:
+    - **Free Plan**: Clearly marked as the "Current Plan" with a minimalist shadow-rich button.
+    - **Premium Plan**: Highlighted with an orange border and a "RECOMMENDED" badge to drive conversion.
+- **Feature Comparison**: Implemented a reusable `FeatureItemView` with success checkmarks to concisely list plan benefits (e.g., "Unlimited Ads", "Verified Badge").
+- **Dynamic UX**: Added supportive vertical bouncing (`alwaysBounceVertical`) to the scroll view for a more fluid, high-end feel.
 
-### 🛠️ Technical Refinements & Bug Fixes
-- **Shadow vs. Clipping Architecture**: Solved an advanced iOS UI conflict by implementing a double-layered view architecture (`clippingView`) to allow simultaneous shadows and rounded corners on product cards.
-- **Image Management**: Fixed data bleeding and overlap issues by enforcing strict image clipping (`clipsToBounds`) and precise layout padding.
-- **Live Data Sync**: Integrated `LocalProduct` SwiftData models into the dashboard to ensure the UI reflects real user data in real-time.
+### 🔗 Navigation & State Handling
+- **Interactive Settings Rows**: Upgraded `SettingsRowView` with a closure-based `onTap` system, replacing static rows with actionable navigation points.
+- **Flow Control**: Integrated the "Pricing Plans" row to trigger a smooth push navigation to the new subscription module.
+- **Deep Clean**: Resolved a redundant scroll view definition and optimized constraint priorities to ensure perfect layout across various screen sizes.
 
-### 🛡️ Experience & Safety Features
-- **Operational Guards**: Added confirmation alerts on the central **"+"** button and **"Back"** buttons to prevent accidental data loss.
-- **Persistent Branding**: Synchronized the new premium **Purple-to-Peach** gradient theme across the Dashboard, My Ads, and Chat modules.
-- **Performance Fixes**: Optimized data fetching in the "My Ads" screen to ensure listings are always up-to-date.
+### 🎨 Pixel-Perfect UI Refinement
+- **Badge layering**: Refactored the card architecture to ensure the "RECOMMENDED" badge sits perfectly on top of the card border, eliminating drawing conflicts.
+- **Aesthetic Consistency**: Leveraged centralized `GradientView` and `UIColor` extensions to maintain brand harmony.
 
 ---
 
@@ -27,19 +28,16 @@ The placeholder home screen has been fully replaced with a multi-sectioned, prem
 
 | Module | Purpose |
 | :--- | :--- |
-| `DashboardViewController.swift` | Rebuilt core UI logic and multi-section layout. |
-| `DashboardProductCell.swift` | Created grid-optimized marketplace cards with shadow support. |
-| `DashboardCategoryCell.swift` | Horizontal navigation component for categories. |
-| `LocalDataManager.swift` | Enhanced product retrieval and persistence logic. |
-| `AddProductViewController.swift` | Refined header shadows and safety validation rules. |
+| `SubscriptionViewController.swift` | The core engine for the pricing and subscription UI logic. |
+| `PlanCardView` & `FeatureItemView` | Reusable UI components for displaying membership benefits. |
+| `UserSettingViewController.swift` | Upgraded to handle interactive row gestures and navigation logic. |
 
 ---
 
-## 🛠 Tech Stack
-- **Language**: Swift
-- **Frameworks**: UIKit (Custom Layouts, AutoLayout)
-- **Persistence**: SwiftData
-- **UI Components**: CoreGraphics (Gradients, Shadows), UIVisualEffectView (Glassmorphism)
+## 🛠 Tech Stack Update
+- **Patterns**: Closure-based Event Handling, View-to-Controller Navigation.
+- **UI Components**: UIStackView (Nested Layouts), UITapGestureRecognizer (Interaction Enhancement).
+- **Styling**: CALayer Shadowing, Custom Container Borders.
 
 ---
 *Developed as part of the Udhaarly Final Year Project (FYP).*
