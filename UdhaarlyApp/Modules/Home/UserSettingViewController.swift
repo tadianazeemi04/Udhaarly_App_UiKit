@@ -228,7 +228,12 @@ class UserSettingViewController: UIViewController {
             SettingsRow(icon: "mappin.circle", title: "Saved Addresses", iconBg: "#EFF6FF", iconColor: "#007AFF"),
             SettingsRow(icon: "creditcard", title: "Payment Methods", iconBg: "#F5F3FF", iconColor: "#AD46FF"),
             SettingsRow(icon: "crown", title: "Pricing Plans", iconBg: "#FFEDD4", iconColor: "#FF5722")
-        ])
+        ]) { [weak self] title in
+            if title == "Pricing Plans" {
+                let vc = SubscriptionViewController()
+                self?.navigationController?.pushViewController(vc, animated: true)
+            }
+        }
 
         securitySection.addRows([
             SettingsRow(icon: "shield", title: "Privacy Policy", iconBg: "#F0FDF4", iconColor: "#00C951"),
@@ -356,9 +361,12 @@ class SettingsSectionView: UIView {
         ])
     }
     
-    func addRows(_ rows: [SettingsRow]) {
+    func addRows(_ rows: [SettingsRow], completion: ((String) -> Void)? = nil) {
         for (index, row) in rows.enumerated() {
             let rowView = SettingsRowView(row: row)
+            rowView.onTap = {
+                completion?(row.title)
+            }
             stackView.addArrangedSubview(rowView)
             
             if index < rows.count - 1 {
@@ -372,8 +380,14 @@ class SettingsSectionView: UIView {
 }
 
 class SettingsRowView: UIView {
+    var onTap: (() -> Void)?
+
     init(row: SettingsRow) {
         super.init(frame: .zero)
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        addGestureRecognizer(tapGesture)
+        isUserInteractionEnabled = true
         
         let iconContainer = UIView()
         iconContainer.backgroundColor = UIColor(hex: row.iconBg)
@@ -421,6 +435,11 @@ class SettingsRowView: UIView {
             chevron.heightAnchor.constraint(equalToConstant: 12)
         ])
     }
+
+    @objc private func handleTap() {
+        onTap?()
+    }
+
     required init?(coder: NSCoder) { fatalError() }
 }
 
