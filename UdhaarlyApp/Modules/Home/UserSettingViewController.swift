@@ -231,6 +231,11 @@ class UserSettingViewController: UIViewController {
         ]) { [weak self] title in
             if title == "Pricing Plans" {
                 let vc = SubscriptionViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Request" {
+                let vc = RequestsViewController()
+                vc.hidesBottomBarWhenPushed = true
                 self?.navigationController?.pushViewController(vc, animated: true)
             }
         }
@@ -385,6 +390,9 @@ class SettingsRowView: UIView {
     init(row: SettingsRow) {
         super.init(frame: .zero)
         
+        self.layer.cornerRadius = 8
+        self.clipsToBounds = true
+        
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         addGestureRecognizer(tapGesture)
         isUserInteractionEnabled = true
@@ -434,6 +442,26 @@ class SettingsRowView: UIView {
             chevron.widthAnchor.constraint(equalToConstant: 12),
             chevron.heightAnchor.constraint(equalToConstant: 12)
         ])
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        UIView.animate(withDuration: 0.1) {
+            self.backgroundColor = UIColor.black.withAlphaComponent(0.05)
+        }
+    }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        resetBackground()
+    }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        resetBackground()
+    }
+    private func resetBackground() {
+        UIView.animate(withDuration: 0.2) {
+            self.backgroundColor = .clear
+        }
     }
 
     @objc private func handleTap() {
