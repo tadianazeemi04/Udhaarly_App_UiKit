@@ -1,38 +1,38 @@
-# 🚀 Recent Updates (March 16, 2026)
+# 🚀 Recent Updates (March 17, 2026)
 
-Today’s session focused on expanding the core functionality of the Udhaarly app by implementing the **Requests Management** module and refining the global user experience across existing screens.
-
----
-
-### 📋 Requests & Transaction Management
-Successfully built the "Requests" module from high-fidelity mockups to handle the borrow-lend ecosystem:
-- **Dual-Mode UI**: Implemented a responsive Borrow/Lend toggle with dynamic color states to distinguish between incoming and outgoing requests.
-- **Detailed Request Cards**: 
-    - Designed custom `RequestCardView` components that display user identity (masked phone for privacy), product images, and pricing.
-    - Added conditional action buttons (**Cancel**, **Chat**, **Accept**) for borrowers and a **“Pending”** status for lenders.
-- **Independent Navigation**: Integrated the module into the main flow while ensuring it opens in a dedicated view by automatically hiding the main tab bar (`hidesBottomBarWhenPushed`).
-
-### 🎨 Visual & UX Refinements
-- **Tactile Feedback**: Upgraded `SettingsRowView` with a custom touch-handling system. All settings rows now provide subtle background highlights when tapped, significantly improving the "feel" of the interface.
-- **Navigation Logic**: Linkage established between the **User Profile** and the new **Requests** screen, completing another critical piece of the app's secondary navigation loop.
-- **UI Consistency**: Maintained brand alignment by leveraging the existing gradient header system and centralized color tokens.
+Today’s session focused on bridging the gap between browsing and borrowing by implementing the **Product Detail** screen and connecting it to the main **Dashboard**.
 
 ---
 
-## 📂 Architecture & Key Files
+### 📦 Product Detail Module
+Designed and implemented a high-fidelity, interactive product detail screen:
+- **Sticky Bottom Action Bar**: A persistent bar containing "Chat" and "Request to Borrow" buttons, pinned to the bottom of the screen for instant access.
+- **Dynamic Content**: Full integration with the `LocalProduct` model, displaying user-added images, dynamic pricing, and product descriptions.
+- **Visual Excellence**:
+    - **Header Image Section**: Custom overlay controls for navigation and favorites.
+    - **Owner Profile Card**: Branded profile section showcasing lender identity and ratings.
+    - **Rental Tags**: Dynamic UI badges for rental durations (Day, Week, Month).
+
+### 🔗 Navigation & UX
+- **Seamless Flow**: Interactive product cards on the Dashboard now trigger a push navigation to the detailed breakdown.
+- **Data Persistence**: Leveraging SwiftData to fetch and display real-time results from user-added products.
+- **Constraint Refinement**: Optimized button placement (Back/Favorite) and action bar sizing for a premium mobile feel.
+
+---
+
+### 📂 Architecture & Key Files
 
 | Module | Purpose |
 | :--- | :--- |
-| `RequestsViewController.swift` | Orchestrates the Borrow/Lend request views and tab logic. |
-| `RequestCardView.swift` | A high-fidelity reusable component for transaction details. |
-| `UserSettingViewController.swift` | Refactored to handle expanded navigation and row interaction feedback. |
+| `ProductDetailViewController.swift` | **[NEW]** Comprehensive product view and transaction entry point. |
+| `DashboardViewController.swift` | **[UPDATE]** Integrated navigation and local results fetching. |
 
 ---
 
-## 🛠 Tech Stack Update
-- **Patterns**: Conditional UI Rendering, Segmented Control Logic.
-- **UI Components**: UIStackView (Dynamic List Management), UITapGestureRecognizer + Touch Overrides (Feedback).
-- **UX**: Smart Tab Bar Management (`hidesBottomBarWhenPushed`).
+### 🛠 Tech Stack Update
+- **UI Components**: UIStackView (Dynamic Tags), Programmatic AutoLayout (Sticky Elements).
+- **Architecture**: Object-based initialization and data injection.
+- **Persistence**: Integrated Local SwiftData fetching for dynamic results.
 
 ---
 *Developed as part of the Udhaarly Final Year Project (FYP).*
