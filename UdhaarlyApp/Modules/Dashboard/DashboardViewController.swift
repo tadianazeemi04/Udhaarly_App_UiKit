@@ -296,4 +296,12 @@ extension DashboardViewController: UICollectionViewDelegate, UICollectionViewDat
             return cell
         }
     }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        if collectionView == adsCollectionView {
+            let product = filteredProducts[indexPath.item]
+            let detailVC = ProductDetailViewController(product: product)
+            navigationController?.pushViewController(detailVC, animated: true)
+        }
+    }
 }
