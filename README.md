@@ -7,7 +7,7 @@ Today’s session focused on bridging the gap between browsing and borrowing by 
 ### 📦 Product Detail Module
 Designed and implemented a high-fidelity, interactive product detail screen:
 - **Sticky Bottom Action Bar**: A persistent bar containing "Chat" and "Request to Borrow" buttons, pinned to the bottom of the screen for instant access.
-- **Dynamic Content**: Full integration with the `LocalProduct` model, displaying user-added images, dynamic pricing, and product descriptions.
+- **Dynamic Content**: Full-integration with the `LocalProduct` model, displaying user-added images, dynamic pricing, and product descriptions.
 - **Visual Excellence**:
     - **Header Image Section**: Custom overlay controls for navigation and favorites.
     - **Owner Profile Card**: Branded profile section showcasing lender identity and ratings.
