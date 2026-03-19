@@ -237,6 +237,10 @@ class UserSettingViewController: UIViewController {
                 let vc = RequestsViewController()
                 vc.hidesBottomBarWhenPushed = true
                 self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Favorites" {
+                let vc = FavoritesViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
             }
         }
 
@@ -244,7 +248,33 @@ class UserSettingViewController: UIViewController {
             SettingsRow(icon: "shield", title: "Privacy Policy", iconBg: "#F0FDF4", iconColor: "#00C951"),
             SettingsRow(icon: "gearshape", title: "Settings", iconBg: "#F3F4F6", iconColor: "#6A7282"),
             SettingsRow(icon: "rectangle.portrait.and.arrow.right", title: "Logout", iconBg: "#FEF2F2", iconColor: "#FF0000")
-        ])
+        ]) { [weak self] title in
+            if title == "Logout" {
+                self?.handleLogout()
+            }
+        }
+    }
+
+    private func handleLogout() {
+        let alert = UIAlertController(title: "Logout", message: "Are you sure you want to logout?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive, handler: { _ in
+            // Clear login state
+            UserDefaults.standard.set(false, forKey: "isUserLoggedIn")
+            
+            // Navigate back to the very first screen (HomeViewController as seen in SceneDelegate)
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                let welcomeVC = HomeViewController()
+                let nav = UINavigationController(rootViewController: welcomeVC)
+                window.rootViewController = nav
+                window.makeKeyAndVisible()
+                
+                // Add a smooth transition
+                UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
+            }
+        }))
+        present(alert, animated: true, completion: nil)
     }
 }
 

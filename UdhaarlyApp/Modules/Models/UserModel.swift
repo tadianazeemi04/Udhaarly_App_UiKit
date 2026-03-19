@@ -17,13 +17,15 @@ class LocalUser {
     var dob: String
     var profileImageData: Data?
     var registrationDate: Date
+    var password: String = ""
     
-    init(email: String, firstName: String, lastName: String, location: String, dob: String,profileImageData: Data? = nil) {
+    init(email: String, firstName: String, lastName: String, location: String, dob: String, password: String = "", profileImageData: Data? = nil) {
         self.email = email
         self.firstName = firstName
         self.lastName = lastName
         self.location = location
         self.dob = dob
+        self.password = password
         self.profileImageData = profileImageData
         self.registrationDate = Date()
     }

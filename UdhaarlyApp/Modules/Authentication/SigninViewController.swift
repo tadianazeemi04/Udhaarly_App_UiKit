@@ -219,6 +219,14 @@ class SigninViewController: UIViewController {
     @objc private func didTapSignin() {
         guard let email = emailTextField.text, let enteredPassword = passwordTextField.text else { return }
         
+        // ADMIN BYPASS: Custom credentials for dashboard access
+        if email == "admin123@admin.com", enteredPassword == "admin123" {
+            let adminVC = AdminViewController()
+            // Using a cross-dissolve or push depending on preference, here we replace to stay in the stack comfortably.
+            navigationController?.setViewControllers([adminVC], animated: true)
+            return
+        }
+        
         // 1. Match Check: Retrieve the encrypted password from Keychain for this email.
         if let storedPassword = KeychainHelper.shared.read(account: email) {
             if enteredPassword == storedPassword {

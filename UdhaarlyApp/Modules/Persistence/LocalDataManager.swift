@@ -30,6 +30,23 @@ class LocalDataManager {
         return (try? context?.fetch(descriptor)) ?? []
     }
     
+    func fetchFavorites() -> [LocalProduct] {
+        let descriptor = FetchDescriptor<LocalProduct>(
+            predicate: #Predicate { $0.isFavorite == true },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
+    func saveContext() {
+        try? context?.save()
+    }
+
+    func fetchAllUsers() -> [LocalUser] {
+        let descriptor = FetchDescriptor<LocalUser>()
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+
     func saveUser(user: LocalUser) {
         context?.insert(user)
         try? context?.save()

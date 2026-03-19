@@ -9,52 +9,84 @@ import UIKit
 
 class ChatsViewController: UIViewController {
 
+    // MARK: - Data Mockup
+    private struct ChatHistory {
+        let name: String
+        let message: String
+        let time: String
+        let unreadCount: Int
+    }
+
+    private let chatHistory: [ChatHistory] = [
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
+        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3)
+    ]
+
+    // MARK: - UI Components
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Messages"
-        label.font = .systemFont(ofSize: 28, weight: .bold)
+        label.text = "Chats"
+        label.font = .systemFont(ofSize: 24, weight: .bold)
         label.textColor = .brandOrange
-        return label
-    }()
-    
-    private let placeholderLabel: UILabel = {
-        let label = UILabel()
-        label.text = "No messages yet.\nStart a conversation soon!"
-        label.numberOfLines = 0
-        label.textAlignment = .center
-        label.textColor = .gray
-        label.font = .systemFont(ofSize: 16)
+        label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
 
-    private var gradientLayer: CAGradientLayer?
+    private lazy var tableView: UITableView = {
+        let tv = UITableView()
+        tv.delegate = self
+        tv.dataSource = self
+        tv.register(ChatCell.self, forCellReuseIdentifier: ChatCell.identifier)
+        tv.separatorStyle = .none
+        tv.backgroundColor = .white
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        return tv
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        gradientLayer = view.applyThemeGradient()
-        
         setupLayout()
     }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        gradientLayer?.frame = view.bounds
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
-    
+
     private func setupLayout() {
         view.addSubview(titleLabel)
-        view.addSubview(placeholderLabel)
-        
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
+            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            placeholderLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            placeholderLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+}
+
+extension ChatsViewController: UITableViewDelegate, UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return chatHistory.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: ChatCell.identifier, for: indexPath) as! ChatCell
+        let chat = chatHistory[indexPath.row]
+        cell.configure(name: chat.name, message: chat.message, time: chat.time, badgeCount: chat.unreadCount)
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 90
     }
 }
