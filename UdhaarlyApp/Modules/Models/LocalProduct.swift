@@ -23,6 +23,7 @@ class LocalProduct {
     @Attribute(.externalStorage) var coverImage: Data? // the buyer promotion image
     var galleryImages: [Data]
     var isPremium: Bool
+    var isFavorite: Bool = false
     var createdAt: Date
 
     init(
@@ -37,6 +38,7 @@ class LocalProduct {
         coverImage: Data? = nil,
         galleryImages: [Data] = [],
         isPremium: Bool = false,
+        isFavorite: Bool = false,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -50,6 +52,7 @@ class LocalProduct {
         self.coverImage = coverImage
         self.galleryImages = galleryImages
         self.isPremium = isPremium
+        self.isFavorite = isFavorite
         self.createdAt = createdAt
     }
 }

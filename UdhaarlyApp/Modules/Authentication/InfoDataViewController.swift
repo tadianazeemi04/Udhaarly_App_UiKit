@@ -328,6 +328,7 @@ class InfoDataViewController: UIViewController {
             lastName: lName,
             location: loc,
             dob: bday,
+            password: self.userPassword ?? "",
             profileImageData: imageData // Save the binary data here
         )
         

@@ -20,14 +20,24 @@ class ProductDetailViewController: UIViewController {
     
     private let contentView = UIView()
     
-    // Header Image Section
-    private let headerImageView: UIImageView = {
-        let iv = UIImageView()
-        iv.contentMode = .scaleAspectFill
-        iv.clipsToBounds = true
-        iv.backgroundColor = .systemGray6
-        return iv
+    // Header Image Section (Gallery Slider)
+    private lazy var imageCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        
+        let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        cv.isPagingEnabled = true
+        cv.showsHorizontalScrollIndicator = false
+        cv.backgroundColor = .systemGray6
+        cv.dataSource = self
+        cv.delegate = self
+        cv.register(ImageCollectionViewCell.self, forCellWithReuseIdentifier: ImageCollectionViewCell.identifier)
+        return cv
     }()
+    
+    private var galleryImages: [Data] = []
     
     private let backButton: UIButton = {
         let btn = UIButton(type: .system)
@@ -39,13 +49,14 @@ class ProductDetailViewController: UIViewController {
         return btn
     }()
     
-    private let favoriteButton: UIButton = {
+    private lazy var favoriteButton: UIButton = {
         let btn = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
         btn.setImage(UIImage(systemName: "heart", withConfiguration: config), for: .normal)
         btn.tintColor = .black
         btn.backgroundColor = .white
         btn.layer.cornerRadius = 20
+        btn.addTarget(self, action: #selector(favoriteButtonTapped), for: .touchUpInside)
         return btn
     }()
     
@@ -54,14 +65,14 @@ class ProductDetailViewController: UIViewController {
         pc.numberOfPages = 3
         pc.currentPage = 0
         pc.pageIndicatorTintColor = .systemGray4
-        pc.currentPageIndicatorTintColor = .brandOrange
+        pc.currentPageIndicatorTintColor = UIColor(hex: "#FF6700")
         return pc
     }()
     
     // Info Section
     private let infoContainerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .white
+        view.backgroundColor = UIColor(hex: "#FFF9F6") // Soft Peach/Cream
         view.layer.cornerRadius = 30
         view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         return view
@@ -78,7 +89,7 @@ class ProductDetailViewController: UIViewController {
     private let priceLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 22, weight: .bold)
-        label.textColor = .black
+        label.textColor = UIColor(hex: "#FF6700") // Bright Orange
         return label
     }()
     
@@ -123,9 +134,11 @@ class ProductDetailViewController: UIViewController {
     }()
     
     // Profile Section
-    private let profileContainer: UIView = {
-        let view = UIView()
-        view.backgroundColor = .brandOrange
+    private let profileContainer: GradientView = {
+        let view = GradientView()
+        view.colors = [UIColor(hex: "#FF6700"), UIColor(hex: "#E90007")]
+        view.layer.cornerRadius = 16
+        view.addDropShadow(opacity: 0.2, radius: 8)
         return view
     }()
     
@@ -142,7 +155,7 @@ class ProductDetailViewController: UIViewController {
     private let profileNameLabel: UILabel = {
         let label = UILabel()
         label.text = "Ali Hamid"
-        label.font = .systemFont(ofSize: 18, weight: .bold)
+        label.font = .systemFont(ofSize: 22, weight: .bold) // Increased size
         label.textColor = .white
         return label
     }()
@@ -150,7 +163,7 @@ class ProductDetailViewController: UIViewController {
     private let profileRatingLabel: UILabel = {
         let label = UILabel()
         label.text = "4.9 ★ (12 reviews)"
-        label.font = .systemFont(ofSize: 12)
+        label.font = .systemFont(ofSize: 14, weight: .medium)
         label.textColor = .white
         return label
     }()
@@ -158,10 +171,11 @@ class ProductDetailViewController: UIViewController {
     private let viewProfileButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("View Profile", for: .normal)
-        btn.backgroundColor = .white.withAlphaComponent(0.9)
+        btn.backgroundColor = UIColor(hex: "#FFF5F1") // Very light peach
         btn.setTitleColor(.black, for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
-        btn.layer.cornerRadius = 20
+        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
+        btn.layer.cornerRadius = 22
+        btn.addDropShadow(opacity: 0.15, radius: 4)
         return btn
     }()
     
@@ -175,6 +189,23 @@ class ProductDetailViewController: UIViewController {
     }()
     
     private let descriptionTextLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = .darkGray
+        label.numberOfLines = 0
+        return label
+    }()
+    
+    // Highlights Section
+    private let highlightsHeaderLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Highlights"
+        label.font = .systemFont(ofSize: 18, weight: .bold)
+        label.textColor = .black
+        return label
+    }()
+    
+    private let highlightsTextLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 15)
         label.textColor = .darkGray
@@ -196,7 +227,7 @@ class ProductDetailViewController: UIViewController {
         config.image = UIImage(systemName: "bubble.left.and.bubble.right")
         config.imagePlacement = .top
         config.imagePadding = 4
-        config.baseForegroundColor = .brandOrange
+        config.baseForegroundColor = UIColor(hex: "#FF6700")
         
         let titleAttr = AttributedString("Chat", attributes: .init([.font: UIFont.systemFont(ofSize: 12, weight: .medium)]))
         config.attributedTitle = titleAttr
@@ -208,7 +239,7 @@ class ProductDetailViewController: UIViewController {
     private let borrowButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Request to Borrow", for: .normal)
-        btn.backgroundColor = .brandOrange
+        btn.backgroundColor = UIColor(hex: "#FF6700")
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
         btn.layer.cornerRadius = 14
@@ -241,12 +272,14 @@ class ProductDetailViewController: UIViewController {
         view.addSubview(bottomBar)
         scrollView.addSubview(contentView)
         
-        [headerImageView, backButton, favoriteButton, pageControl, infoContainerView].forEach {
+        [imageCollectionView, backButton, favoriteButton, pageControl, infoContainerView].forEach {
             contentView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
         
-        [titleLabel, priceLabel, tagsStackView, locationContainer, timeContainer, profileContainer, descriptionHeaderLabel, descriptionTextLabel].forEach {
+        [titleLabel, priceLabel, tagsStackView, locationContainer, timeContainer, profileContainer, 
+         descriptionHeaderLabel, descriptionTextLabel, 
+         highlightsHeaderLabel, highlightsTextLabel].forEach {
             infoContainerView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -277,17 +310,17 @@ class ProductDetailViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             
-            headerImageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            headerImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            headerImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            headerImageView.heightAnchor.constraint(equalToConstant: 450),
+            imageCollectionView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            imageCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            imageCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            imageCollectionView.heightAnchor.constraint(equalToConstant: 450),
             
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -50),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             backButton.widthAnchor.constraint(equalToConstant: 40),
             backButton.heightAnchor.constraint(equalToConstant: 40),
             
-            favoriteButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -50),
+            favoriteButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             favoriteButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             favoriteButton.widthAnchor.constraint(equalToConstant: 40),
             favoriteButton.heightAnchor.constraint(equalToConstant: 40),
@@ -295,7 +328,7 @@ class ProductDetailViewController: UIViewController {
             pageControl.bottomAnchor.constraint(equalTo: infoContainerView.topAnchor, constant: -10),
             pageControl.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             
-            infoContainerView.topAnchor.constraint(equalTo: headerImageView.bottomAnchor, constant: -40),
+            infoContainerView.topAnchor.constraint(equalTo: imageCollectionView.bottomAnchor, constant: -40),
             infoContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             infoContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             infoContainerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
@@ -321,27 +354,26 @@ class ProductDetailViewController: UIViewController {
             
             timeIcon.widthAnchor.constraint(equalToConstant: 16),
             timeIcon.heightAnchor.constraint(equalToConstant: 16),
+                       profileContainer.topAnchor.constraint(equalTo: locationContainer.bottomAnchor, constant: 30),
+            profileContainer.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
+            profileContainer.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
+            profileContainer.heightAnchor.constraint(equalToConstant: 100), // Increased height to match mockup
             
-            profileContainer.topAnchor.constraint(equalTo: locationContainer.bottomAnchor, constant: 25),
-            profileContainer.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor),
-            profileContainer.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor),
-            profileContainer.heightAnchor.constraint(equalToConstant: 80),
-            
-            profileImageView.leadingAnchor.constraint(equalTo: profileContainer.leadingAnchor, constant: 20),
             profileImageView.centerYAnchor.constraint(equalTo: profileContainer.centerYAnchor),
-            profileImageView.widthAnchor.constraint(equalToConstant: 50),
-            profileImageView.heightAnchor.constraint(equalToConstant: 50),
+            profileImageView.leadingAnchor.constraint(equalTo: profileContainer.leadingAnchor, constant: 15),
+            profileImageView.widthAnchor.constraint(equalToConstant: 70),
+            profileImageView.heightAnchor.constraint(equalToConstant: 70),
             
-            profileNameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 12),
-            profileNameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 2),
+            profileNameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 8),
+            profileNameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 15),
             
+            profileRatingLabel.topAnchor.constraint(equalTo: profileNameLabel.bottomAnchor, constant: 4),
             profileRatingLabel.leadingAnchor.constraint(equalTo: profileNameLabel.leadingAnchor),
-            profileRatingLabel.topAnchor.constraint(equalTo: profileNameLabel.bottomAnchor, constant: 2),
             
-            viewProfileButton.trailingAnchor.constraint(equalTo: profileContainer.trailingAnchor, constant: -20),
             viewProfileButton.centerYAnchor.constraint(equalTo: profileContainer.centerYAnchor),
-            viewProfileButton.widthAnchor.constraint(equalToConstant: 110),
-            viewProfileButton.heightAnchor.constraint(equalToConstant: 40),
+            viewProfileButton.trailingAnchor.constraint(equalTo: profileContainer.trailingAnchor, constant: -15),
+            viewProfileButton.widthAnchor.constraint(equalToConstant: 130),
+            viewProfileButton.heightAnchor.constraint(equalToConstant: 44),
             
             descriptionHeaderLabel.topAnchor.constraint(equalTo: profileContainer.bottomAnchor, constant: 25),
             descriptionHeaderLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 20),
@@ -349,7 +381,14 @@ class ProductDetailViewController: UIViewController {
             descriptionTextLabel.topAnchor.constraint(equalTo: descriptionHeaderLabel.bottomAnchor, constant: 12),
             descriptionTextLabel.leadingAnchor.constraint(equalTo: descriptionHeaderLabel.leadingAnchor),
             descriptionTextLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -20),
-            descriptionTextLabel.bottomAnchor.constraint(equalTo: infoContainerView.bottomAnchor, constant: -40),
+            
+            highlightsHeaderLabel.topAnchor.constraint(equalTo: descriptionTextLabel.bottomAnchor, constant: 25),
+            highlightsHeaderLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 20),
+            
+            highlightsTextLabel.topAnchor.constraint(equalTo: highlightsHeaderLabel.bottomAnchor, constant: 12),
+            highlightsTextLabel.leadingAnchor.constraint(equalTo: highlightsHeaderLabel.leadingAnchor),
+            highlightsTextLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -20),
+            highlightsTextLabel.bottomAnchor.constraint(equalTo: infoContainerView.bottomAnchor, constant: -40),
             
             bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -366,8 +405,8 @@ class ProductDetailViewController: UIViewController {
             borrowButton.heightAnchor.constraint(equalToConstant: 54)
         ])
         
-        locationIcon.tintColor = .brandOrange
-        timeIcon.tintColor = .brandOrange
+        locationIcon.tintColor = UIColor(hex: "#FF6700")
+        timeIcon.tintColor = UIColor(hex: "#FF6700")
         
         locationContainer.addArrangedSubview(locationIcon)
         locationContainer.addArrangedSubview(locationLabel)
@@ -382,42 +421,67 @@ class ProductDetailViewController: UIViewController {
         locationLabel.text = product.location
         timeLabel.text = "Posted 3 hours ago" // Static for demo as requested by visual
         descriptionTextLabel.text = product.productDescription
+        highlightsTextLabel.text = product.highlights
         
-        if let coverData = product.coverImage, let image = UIImage(data: coverData) {
-            headerImageView.image = image
-        } else if let firstGalleryData = product.galleryImages.first, let image = UIImage(data: firstGalleryData) {
-            headerImageView.image = image
+        // Prepare gallery images
+        galleryImages = []
+        if let coverData = product.coverImage {
+            galleryImages.append(coverData)
         }
+        galleryImages.append(contentsOf: product.galleryImages)
+        
+        pageControl.numberOfPages = galleryImages.count
+        pageControl.isHidden = galleryImages.count <= 1
+        updateFavoriteButtonState()
+        imageCollectionView.reloadData()
         
         // Setup tags
-        let tags = ["Day", "Week", "Month"]
-        tags.forEach { tag in
-            let label = UILabel()
-            label.text = tag
-            label.font = .systemFont(ofSize: 12, weight: .medium)
-            label.textColor = tag == "Day" ? .white : .brandOrange
-            label.backgroundColor = tag == "Day" ? .brandOrange : .white
-            label.layer.borderColor = UIColor.brandOrange.cgColor
-            label.layer.borderWidth = 1
-            label.layer.cornerRadius = 6
-            label.clipsToBounds = true
-            label.textAlignment = .center
-            
-            // Add padding
-            let container = UIView()
-            container.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                label.topAnchor.constraint(equalTo: container.topAnchor),
-                label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                label.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-                label.widthAnchor.constraint(equalToConstant: 60),
-                label.heightAnchor.constraint(equalToConstant: 24)
-            ])
-            
-            tagsStackView.addArrangedSubview(container)
-        }
+        // Clear existing tags if any
+        tagsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        let label = UILabel()
+        label.text = product.duration
+        label.font = .systemFont(ofSize: 12, weight: .bold) // Made bolder
+        label.textColor = .white
+        label.backgroundColor = UIColor(hex: "#FF6700")
+        label.layer.borderColor = UIColor(hex: "#FF6700").cgColor
+        label.layer.borderWidth = 1
+        label.layer.cornerRadius = 6
+        label.clipsToBounds = true
+        label.textAlignment = .center
+        
+        // Add padding
+        let container = UIView()
+        container.addSubview(label)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: container.topAnchor),
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            // Dynamic width based on text, with minimum
+            label.widthAnchor.constraint(greaterThanOrEqualToConstant: 60),
+            label.heightAnchor.constraint(equalToConstant: 24)
+        ])
+        
+        // Add some horizontal padding inside the container for the label text
+        label.layoutMargins = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
+        
+        tagsStackView.addArrangedSubview(container)
+    }
+    
+    private func updateFavoriteButtonState() {
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
+        let imageName = product.isFavorite ? "heart.fill" : "heart"
+        favoriteButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
+        favoriteButton.tintColor = product.isFavorite ? .red : .black
+    }
+    
+    @objc private func favoriteButtonTapped() {
+        product.isFavorite.toggle()
+        updateFavoriteButtonState()
+        LocalDataManager.shared.saveContext()
+        NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
     }
     
     private func setupActions() {
@@ -426,5 +490,61 @@ class ProductDetailViewController: UIViewController {
     
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
+    }
+}
+
+// MARK: - CollectionView DataSource & Delegate
+extension ProductDetailViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return galleryImages.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCollectionViewCell.identifier, for: indexPath) as! ImageCollectionViewCell
+        cell.configure(with: galleryImages[indexPath.item])
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return collectionView.bounds.size
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        if scrollView == imageCollectionView {
+            let page = Int(scrollView.contentOffset.x / scrollView.bounds.width)
+            pageControl.currentPage = page
+        }
+    }
+}
+
+// MARK: - Image Cell
+class ImageCollectionViewCell: UICollectionViewCell {
+    static let identifier = "ImageCollectionViewCell"
+    
+    private let imageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        return iv
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.addSubview(imageView)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func configure(with data: Data) {
+        imageView.image = UIImage(data: data)
     }
 }
