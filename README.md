@@ -22,7 +22,7 @@ This document summarizes the key features, UI improvements, and technical debt r
 - **Seamless Navigation**: Linked the Edit button on the address screen directly to the Profile Editor for a unified management experience.
 
 ### 4. Optimized Product Addition 📦
-- **Automated Reset**: The "Add Product" screen now automatically clears all fields and image placeholders upon successful submission.
+- **Automated Reset**: The "Add Product" screen now automatically clears all_fields and image placeholders upon successful submission.
 - **Navigation fix**: Resolved an issue where redundant "Discard Changes" alerts were appearing after a product was already saved.
 
 ---
