@@ -272,6 +272,40 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         }
     }
     
+    private func clearFields() {
+        nameTextField.text = ""
+        locationTextField.text = ""
+        categoryMenuButton.setTitle("Select Category", for: .normal)
+        categoryMenuButton.setTitleColor(.lightGray, for: .normal)
+        
+        selectedImages = Array(repeating: nil, count: 6)
+        imageSlotsStack.arrangedSubviews.compactMap { $0 as? UIImageView }.forEach {
+            $0.image = UIImage(systemName: "plus")
+            $0.contentMode = .center
+            $0.layer.borderColor = UIColor.brandOrange.withAlphaComponent(0.4).cgColor
+        }
+        
+        if let promoSlot = promotionSlot as? UIImageView {
+            promoSlot.image = UIImage(systemName: "plus")
+            promoSlot.contentMode = .center
+            promoSlot.layer.borderColor = UIColor.brandOrange.cgColor
+        }
+        
+        priceTextField.text = ""
+        durationNumberTextField.text = ""
+        durationUnitMenuButton.setTitle("Days", for: .normal)
+        durationUnitMenuButton.setTitleColor(.lightGray, for: .normal)
+        
+        descriptionTextView.text = ""
+        highlightsTextView.text = ""
+        
+        nameCounterLabel.text = "0/255"
+        descriptionCounterLabel.text = "0"
+        highlightsCounterLabel.text = "0"
+        
+        autoFillUserLocation()
+    }
+    
     // MARK: - UI Helpers
     
     private static func createTitleLabel(text: String) -> UILabel {
@@ -743,8 +777,9 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         
         // Feedback loop
         let alert = UIAlertController(title: "Success", message: "Product '\(name)' added successfully!", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            self.didTapBack()
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
+            self?.clearFields()
+            self?.performBackNavigation()
         }))
         present(alert, animated: true)
     }

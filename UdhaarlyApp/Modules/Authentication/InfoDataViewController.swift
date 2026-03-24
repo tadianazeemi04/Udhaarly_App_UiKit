@@ -92,8 +92,12 @@ class InfoDataViewController: UIViewController {
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
         tf.addDropShadow()
-        tf.autocorrectionType = .no
-        tf.spellCheckingType = .no
+        
+        // Disable auto-correction for name fields as requested.
+        if label.contains("Name") {
+            tf.autocorrectionType = .no
+            tf.spellCheckingType = .no
+        }
         
         if let iconName = icon {
             let iconView = UIImageView(image: UIImage(systemName: iconName))
@@ -118,6 +122,8 @@ class InfoDataViewController: UIViewController {
     private lazy var firstName = createLabeledField(label: "First Name", placeholder: "Enter your first name")
     private lazy var lastName = createLabeledField(label: "Last Name", placeholder: "Enter your last name")
     private lazy var yourLocation = createLabeledField(label: "Add Your Location", placeholder: "Search Location", icon: "mappin.and.ellipse")
+    private lazy var phoneField = createLabeledField(label: "Phone Number", placeholder: "Enter your phone number", icon: "phone")
+    private lazy var addressField = createLabeledField(label: "Address", placeholder: "Enter your detailed address", icon: "house")
     private lazy var dobField = createLabeledField(label: "Date of Birth", placeholder: "DD/MM/YYYY", icon: "calendar")
     
     private var startButtun: UIButton = {
@@ -143,7 +149,7 @@ class InfoDataViewController: UIViewController {
         contentView.addSubview(profileImageView)
         
         
-        let stack = UIStackView(arrangedSubviews: [firstName, lastName, yourLocation, dobField, startButtun])
+        let stack = UIStackView(arrangedSubviews: [firstName, lastName, yourLocation, phoneField, addressField, dobField, startButtun])
         stack.axis = .vertical
         stack.spacing = 14
 //        stack.distribution = .equalSpacing
@@ -269,9 +275,11 @@ class InfoDataViewController: UIViewController {
         let fName = (firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let lName = (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let loc = (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let phone = (phoneField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let addr = (addressField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let bday = (dobField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         
-        let allFieldsFilled = !fName.isEmpty && !lName.isEmpty && !loc.isEmpty && !bday.isEmpty
+        let allFieldsFilled = !fName.isEmpty && !lName.isEmpty && !loc.isEmpty && !phone.isEmpty && !addr.isEmpty && !bday.isEmpty
         
         // Calculate age
         let calendar = Calendar.current
@@ -291,6 +299,8 @@ class InfoDataViewController: UIViewController {
         let fName = (firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let lName = (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let loc = (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let phone = (phoneField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
+        let addr = (addressField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         let bday = (dobField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first?.text ?? ""
         
         // 1. Profile Picture Check
@@ -301,7 +311,7 @@ class InfoDataViewController: UIViewController {
         }
         
         // 2. Text Fields Check
-        if fName.isEmpty || lName.isEmpty || loc.isEmpty || bday.isEmpty {
+        if fName.isEmpty || lName.isEmpty || loc.isEmpty || phone.isEmpty || addr.isEmpty || bday.isEmpty {
             showAlert(message: "All fields are required. Please fill in all information.")
             return
         }
@@ -327,6 +337,8 @@ class InfoDataViewController: UIViewController {
             firstName: fName,
             lastName: lName,
             location: loc,
+            phoneNumber: phone,
+            address: addr,
             dob: bday,
             password: self.userPassword ?? "",
             profileImageData: imageData // Save the binary data here
@@ -366,7 +378,9 @@ class InfoDataViewController: UIViewController {
         // Add targets for real-time validation
         [(firstName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
          (lastName as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
-         (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first].forEach {
+         (yourLocation as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
+         (phoneField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first,
+         (addressField as? UIStackView)?.arrangedSubviews.compactMap { $0 as? UITextField }.first].forEach {
             $0?.addTarget(self, action: #selector(validateFields), for: .editingChanged)
         }
         

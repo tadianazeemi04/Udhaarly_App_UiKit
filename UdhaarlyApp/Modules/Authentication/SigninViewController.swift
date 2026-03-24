@@ -236,6 +236,7 @@ class SigninViewController: UIViewController {
                 if let _ = LocalDataManager.shared.fetchUser(email: email) {
                     // Profile exists: Returning user.
                     UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
+                    UserDefaults.standard.set(email, forKey: "currentUserEmail")
                     let tabBar = MainTabBarController()
                     navigationController?.setViewControllers([tabBar], animated: true)
                 } else {

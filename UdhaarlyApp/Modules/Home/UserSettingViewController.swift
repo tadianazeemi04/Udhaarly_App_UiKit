@@ -119,6 +119,7 @@ class UserSettingViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        loadUserData()
     }
 
     override func viewDidLoad() {
@@ -126,6 +127,31 @@ class UserSettingViewController: UIViewController {
         setupUI()
         setupStats()
         setupSections()
+        loadUserData()
+    }
+
+    private func loadUserData() {
+        guard let email = UserDefaults.standard.string(forKey: "currentUserEmail"),
+              let user = LocalDataManager.shared.fetchUser(email: email) else {
+            return
+        }
+
+        let firstName = user.firstName
+        let lastName = user.lastName
+        nameLabel.text = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+        
+        if !user.location.isEmpty {
+            locationLabel.text = "📍 \(user.location)"
+        } else {
+            locationLabel.text = "📍 Location not set"
+        }
+
+        if let imageData = user.profileImageData {
+            profileImageView.image = UIImage(data: imageData)
+        } else {
+            profileImageView.image = UIImage(systemName: "person.circle.fill")
+            profileImageView.tintColor = .white
+        }
     }
 
     private func setupUI() {
@@ -226,7 +252,7 @@ class UserSettingViewController: UIViewController {
             SettingsRow(icon: "doc.text", title: "Request", iconBg: "#EFF6FF", iconColor: "#007AFF"),
             SettingsRow(icon: "heart", title: "Favorites", iconBg: "#FEF2F2", iconColor: "#FD0000"),
             SettingsRow(icon: "mappin.circle", title: "Saved Addresses", iconBg: "#EFF6FF", iconColor: "#007AFF"),
-            SettingsRow(icon: "creditcard", title: "Payment Methods", iconBg: "#F5F3FF", iconColor: "#AD46FF"),
+            SettingsRow(icon: "person.circle", title: "Edit Profile", iconBg: "#F5F3FF", iconColor: "#AD46FF"),
             SettingsRow(icon: "crown", title: "Pricing Plans", iconBg: "#FFEDD4", iconColor: "#FF5722")
         ]) { [weak self] title in
             if title == "Pricing Plans" {
@@ -239,6 +265,14 @@ class UserSettingViewController: UIViewController {
                 self?.navigationController?.pushViewController(vc, animated: true)
             } else if title == "Favorites" {
                 let vc = FavoritesViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Saved Addresses" {
+                let vc = SavedAddressViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Edit Profile" {
+                let vc = EditProfileViewController()
                 vc.hidesBottomBarWhenPushed = true
                 self?.navigationController?.pushViewController(vc, animated: true)
             }

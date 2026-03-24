@@ -1,49 +1,37 @@
-# Udhaarly App - March 18-19 Development Progress
+# Udhaarly App - March 24 Development Progress
 
-This document summarizes the key features, UI improvements, and technical debt resolved during the development sessions on March 18th and 19th.
+This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 24th.
 
-## 🚀 New Features
+## 🚀 New Features & Enhancements
 
-### 1. Admin Dashboard 🛡️
-- **Direct Access**: Implemented a secure administrative entry point at the Sign-in screen.
-  - **Credentials**: `admin123@admin.com` / `admin123`
-- **User Management**: Unified view of all registered accounts, including high-level visibility into user emails and passwords for platform monitoring/testing.
-- **Product Oversight**: A dedicated tab to view every product listed on the platform with details like price, duration, and location.
+### 1. Dynamic Profile System 👤
+- **Real-time Synchronization**: The "My Profile" settings page now dynamically displays the logged-in user's Full Name, Location, and Profile Picture fetched directly from SwiftData.
+- **Improved Persistence**: Fixed authentication logic to ensure `currentUserEmail` is updated in `UserDefaults` upon login, preventing cross-user data mismatches.
 
-### 2. Favorites System 💖
-- **Persistent Saving**: Integrated `isFavorite` state into the `LocalProduct` model using SwiftData.
-- **Interactive Heart Button**: Added a responsive heart icon in the Product Details screen that persists the favorite state across app launches.
-- **Favorites Screen**: A new, dedicated view accessible from the User Settings to manage all saved items in a clean, grid-based layout.
+### 2. Advanced Edit Profile Flow ✏️
+- **Profile Picture Uploads**: Users can now change their profile image directly from the Edit screen. Includes a distinctive **camera icon overlay** and a white border for better visibility.
+- **Unsaved Changes Protection**: Implemented a "Discard Changes" alert to prevent accidental data loss when navigating away from the edit screen with pending modifications.
+- **Keyboard-Aware Scrolling**: Added dynamic `UIScrollView` adjustments so that text fields remain fully visible and interactable even when the system keyboard is open.
+- **UX Refinements**: 
+  - Increased vertical spacing for a premium, non-cluttered layout.
+  - Disabled auto-correction for name fields.
+  - Added "Tap to Dismiss" gesture for the keyboard.
 
-### 3. Premium Chats UI 💬
-- **Mockup Accuracy**: Completely rebuilt the Chats screen to match a high-fidelity messaging app design.
-- **Custom ChatCell**: Features rounded light-gray (`#EEF0F2`) containers, profile placeholders, and real-time message snippets.
-- **Unread Badges**: Integrated active unread count indicators (red badges) to highlight pending messages.
-- **Layout Optimization**: Optimized for notched devices by removing excess top white space and hidding the navigation bar for a seamless look.
+### 3. Saved Address Integration 📍
+- **Live Data Fetching**: The Saved Address screen now fetches the user's primary address and phone number from the database.
+- **Seamless Navigation**: Linked the Edit button on the address screen directly to the Profile Editor for a unified management experience.
 
-### 4. Secure Logout 🚪
-- **Action Confirmation**: Added a `UIAlertController` to confirm before logging out, preventing accidental session termination.
-- **Session Clearing**: Logic to clear `UserDefaults` login flags and reset the app's root view controller with a smooth cross-dissolve transition.
-
----
-
-## 🎨 UI & UX Refinements
-
-- **Product Details Enhancement**:
-  - **Image Slider**: Implemented a horizontal scrolling gallery for product images.
-  - **Highlights Section**: Added a new section for key product features below the description.
-  - **Owner Profile**: Redesigned with a premium orange-to-red gradient and white typography.
-- **Branding**: Uniform application of `.brandOrange` across headers, buttons, and badges.
-- **Navigation**: Improved safe-area handling for back buttons and headers across all major screens.
+### 4. Optimized Product Addition 📦
+- **Automated Reset**: The "Add Product" screen now automatically clears all fields and image placeholders upon successful submission.
+- **Navigation fix**: Resolved an issue where redundant "Discard Changes" alerts were appearing after a product was already saved.
 
 ---
 
-## ⚙️ Technical Details
+## ⚙️ Technical Foundation
 
-- **SwiftData Models**: Updated `LocalUser` to persist passwords and `LocalProduct` for favorites/highlights.
-- **Keychain Integration**: Enhanced secure storage for sensitive user credentials.
-- **LocalDataManager**: Added `fetchAllUsers()` and stabilized `saveContext()` to ensure data integrity during parallel writes.
-- **Performance**: Optimized table and collection view cell reuse for smooth scrolling with large datasets.
+- **SwiftData Models**: Stabilized `LocalUser` and `LocalProduct` for complex persistence scenarios.
+- **Keychain Integration**: Secure storage for sensitive user credentials.
+- **Performance**: Optimized cell reuse and layout constraints for complex nested views.
 
 ---
 *Developed by Antigravity AI for the Udhaarly Project.*

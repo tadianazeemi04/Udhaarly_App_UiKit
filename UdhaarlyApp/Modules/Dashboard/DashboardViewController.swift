@@ -118,6 +118,12 @@ class DashboardViewController: UIViewController {
         return btn
     }()
     
+    @objc private func didtapUpgrade() {
+        let up = SubscriptionViewController()
+        up.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(up, animated: true)
+    }
+    
     private let recentAdsHeaderLabel: UILabel = {
         let label = UILabel()
         label.text = "Recent Ads"
@@ -164,6 +170,9 @@ class DashboardViewController: UIViewController {
     
     // MARK: - Setup
     private func setupLayout() {
+        
+        upgradeButton.addTarget(self, action: #selector(didtapUpgrade), for: .touchUpInside)
+        
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         

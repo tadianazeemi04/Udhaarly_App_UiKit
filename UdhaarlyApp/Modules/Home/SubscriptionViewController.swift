@@ -142,7 +142,7 @@ class SubscriptionViewController: UIViewController {
             headerGradient.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             headerGradient.heightAnchor.constraint(equalToConstant: 361),
 
-            backButton.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 69),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             backButton.widthAnchor.constraint(equalToConstant: 24),
             backButton.heightAnchor.constraint(equalToConstant: 24),
