@@ -134,7 +134,12 @@ class MyAdsViewController: UIViewController {
     }
     
     func fetchData() {
-        products = LocalDataManager.shared.fetchProducts()
+        let allProducts = LocalDataManager.shared.fetchProducts()
+        if let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") {
+            products = allProducts.filter { $0.publisherEmail == currentUserEmail }
+        } else {
+            products = []
+        }
         tableView.reloadData()
     }
 }
@@ -156,11 +161,34 @@ extension MyAdsViewController: UITableViewDelegate, UITableViewDataSource {
         cell.configure(with: product)
         
         cell.editAction = { [weak self] in
-            // Handle edit
+            let alert = UIAlertController(title: "Edit Product?", message: "Do you want to edit '\(product.name)'?", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Edit", style: .default, handler: { _ in
+                let editVC = AddProductViewController()
+                editVC.productToEdit = product
+                editVC.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(editVC, animated: true)
+            }))
+            self?.present(alert, animated: true)
+        }
+        
+        cell.deleteAction = { [weak self] in
+            let alert = UIAlertController(title: "Delete Product?", message: "Are you sure you want to delete '\(product.name)'? This action cannot be undone.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+                LocalDataManager.shared.deleteProduct(product: product)
+                self?.fetchData()
+                
+                // Show success feedback
+                let successAlert = UIAlertController(title: "Deleted", message: "Product has been removed.", preferredStyle: .alert)
+                successAlert.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(successAlert, animated: true)
+            }))
+            self?.present(alert, animated: true)
         }
         
         cell.shareAction = { [weak self] in
-            let text = "Check out this product: \(product.name) for \(product.price)"
+            let text = "Check out this product: \(product.name) for \(Int(product.price))"
             let ac = UIActivityViewController(activityItems: [text], applicationActivities: nil)
             self?.present(ac, animated: true)
         }

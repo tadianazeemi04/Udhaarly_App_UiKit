@@ -1,37 +1,36 @@
-# Udhaarly App - March 24 Development Progress
+# Udhaarly App - March 25 Development Progress
 
-This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 24th.
+This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 25th.
 
 ## 🚀 New Features & Enhancements
 
-### 1. Dynamic Profile System 👤
-- **Real-time Synchronization**: The "My Profile" settings page now dynamically displays the logged-in user's Full Name, Location, and Profile Picture fetched directly from SwiftData.
-- **Improved Persistence**: Fixed authentication logic to ensure `currentUserEmail` is updated in `UserDefaults` upon login, preventing cross-user data mismatches.
+### 1. Dynamic Publisher Information 📢
+- **Real-time User Fetching**: Product detail pages now dynamically display the publisher's name and profile picture from SwiftData.
+- **Improved Context**: Added a "Posted X hours/days ago" timestamp to each ad, giving users better context on listing freshness.
+- **UI Polishing**: Reduced font sizes and adjusted profile image scaling for a more balanced and professional layout.
 
-### 2. Advanced Edit Profile Flow ✏️
-- **Profile Picture Uploads**: Users can now change their profile image directly from the Edit screen. Includes a distinctive **camera icon overlay** and a white border for better visibility.
-- **Unsaved Changes Protection**: Implemented a "Discard Changes" alert to prevent accidental data loss when navigating away from the edit screen with pending modifications.
-- **Keyboard-Aware Scrolling**: Added dynamic `UIScrollView` adjustments so that text fields remain fully visible and interactable even when the system keyboard is open.
-- **UX Refinements**: 
-  - Increased vertical spacing for a premium, non-cluttered layout.
-  - Disabled auto-correction for name fields.
-  - Added "Tap to Dismiss" gesture for the keyboard.
+### 2. Comprehensive Ad Lifecycle Management ♻️
+- **Soft Delete Mechanism**: Implemented an `isDeleted` flag for products, allowing users to remove ads from their active feed without immediate data loss.
+- **Recovery Center**: New "Deleted Ads" screen accessible via User Settings, featuring a premium 2-column grid layout for managing removed items.
+- **Restore & Permanent Delete**: Empowered users with one-tap recovery or permanent removal of their deleted ads.
+- **Product Editing**: Fully integrated an "Edit Post" flow within `AddProductViewController`, enabling easy updates to existing listings.
 
-### 3. Saved Address Integration 📍
-- **Live Data Fetching**: The Saved Address screen now fetches the user's primary address and phone number from the database.
-- **Seamless Navigation**: Linked the Edit button on the address screen directly to the Profile Editor for a unified management experience.
+### 3. Advanced Multi-Image Carousel 📸
+- **6-Slot Gallery**: Updated the creation flow to capture all 5 product photos plus 1 white-background promotion image.
+- **Image Slider**: Implemented a sliding carousel in the product detail view that uniquely merges all available gallery images for a seamless browsing experience.
 
-### 4. Optimized Product Addition 📦
-- **Automated Reset**: The "Add Product" screen now automatically clears all_fields and image placeholders upon successful submission.
-- **Navigation fix**: Resolved an issue where redundant "Discard Changes" alerts were appearing after a product was already saved.
+### 4. Public User Profiles 👤
+- **Interactive Ratings**: Tapping "View Profile" on any ad now navigates to the advertiser's public profile.
+- **Comprehensive View**: Showcases user ratings, reviews, location, and a horizontal gallery of their other active products.
+- **Modern Design**: Refined with a gradient header, card-style information rows, and premium review cards.
 
 ---
 
 ## ⚙️ Technical Foundation
 
-- **SwiftData Models**: Stabilized `LocalUser` and `LocalProduct` for complex persistence scenarios.
-- **Keychain Integration**: Secure storage for sensitive user credentials.
-- **Performance**: Optimized cell reuse and layout constraints for complex nested views.
+- **SwiftData Relations**: Leveraged cross-context fetching between `LocalUser` and `LocalProduct` via publisher emails.
+- **Data Persistence**: Implemented `LocalReview` model and seeded dummy data for profile evaluations.
+- **Performance**: Optimized collection view layouts for smooth scrolling across nested grids and carousels.
 
 ---
 *Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*

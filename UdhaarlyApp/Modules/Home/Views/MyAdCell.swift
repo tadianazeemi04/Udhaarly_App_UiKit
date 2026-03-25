@@ -73,8 +73,17 @@ class MyAdCell: UITableViewCell {
         return btn
     }()
     
+    private let deleteButton: UIButton = {
+        let btn = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        btn.setImage(UIImage(systemName: "trash", withConfiguration: config), for: .normal)
+        btn.tintColor = .systemRed
+        return btn
+    }()
+    
     var editAction: (() -> Void)?
     var shareAction: (() -> Void)?
+    var deleteAction: (() -> Void)?
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -96,6 +105,7 @@ class MyAdCell: UITableViewCell {
         containerView.addSubview(dateLabel)
         containerView.addSubview(editButton)
         containerView.addSubview(shareButton)
+        containerView.addSubview(deleteButton)
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         productImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -105,6 +115,7 @@ class MyAdCell: UITableViewCell {
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         editButton.translatesAutoresizingMaskIntoConstraints = false
         shareButton.translatesAutoresizingMaskIntoConstraints = false
+        deleteButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
@@ -136,6 +147,11 @@ class MyAdCell: UITableViewCell {
             editButton.widthAnchor.constraint(equalToConstant: 30),
             editButton.heightAnchor.constraint(equalToConstant: 30),
             
+            deleteButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            deleteButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
+            deleteButton.widthAnchor.constraint(equalToConstant: 30),
+            deleteButton.heightAnchor.constraint(equalToConstant: 30),
+            
             shareButton.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
             shareButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
             shareButton.widthAnchor.constraint(equalToConstant: 30),
@@ -144,10 +160,12 @@ class MyAdCell: UITableViewCell {
         
         editButton.addTarget(self, action: #selector(didTapEdit), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(didTapShare), for: .touchUpInside)
+        deleteButton.addTarget(self, action: #selector(didTapDelete), for: .touchUpInside)
     }
     
     @objc private func didTapEdit() { editAction?() }
     @objc private func didTapShare() { shareAction?() }
+    @objc private func didTapDelete() { deleteAction?() }
     
     func configure(with product: LocalProduct) {
         titleLabel.text = product.name

@@ -147,7 +147,7 @@ class ProductDetailViewController: UIViewController {
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         iv.layer.cornerRadius = 25
-        iv.image = UIImage(named: "avatar_placeholder") // Simplified for now
+        iv.image = UIImage(named: "avatar_placeholder")
         iv.backgroundColor = .systemGray5
         return iv
     }()
@@ -155,15 +155,17 @@ class ProductDetailViewController: UIViewController {
     private let profileNameLabel: UILabel = {
         let label = UILabel()
         label.text = "Ali Hamid"
-        label.font = .systemFont(ofSize: 22, weight: .bold) // Increased size
+        label.font = .systemFont(ofSize: 16, weight: .bold)
         label.textColor = .white
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.8
         return label
     }()
     
     private let profileRatingLabel: UILabel = {
         let label = UILabel()
         label.text = "4.9 ★ (12 reviews)"
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: 12, weight: .medium)
         label.textColor = .white
         return label
     }()
@@ -361,14 +363,16 @@ class ProductDetailViewController: UIViewController {
             
             profileImageView.centerYAnchor.constraint(equalTo: profileContainer.centerYAnchor),
             profileImageView.leadingAnchor.constraint(equalTo: profileContainer.leadingAnchor, constant: 15),
-            profileImageView.widthAnchor.constraint(equalToConstant: 70),
-            profileImageView.heightAnchor.constraint(equalToConstant: 70),
+            profileImageView.widthAnchor.constraint(equalToConstant: 50),
+            profileImageView.heightAnchor.constraint(equalToConstant: 50),
             
             profileNameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 8),
             profileNameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 15),
+            profileNameLabel.trailingAnchor.constraint(lessThanOrEqualTo: viewProfileButton.leadingAnchor, constant: -10),
             
             profileRatingLabel.topAnchor.constraint(equalTo: profileNameLabel.bottomAnchor, constant: 4),
             profileRatingLabel.leadingAnchor.constraint(equalTo: profileNameLabel.leadingAnchor),
+            profileRatingLabel.trailingAnchor.constraint(lessThanOrEqualTo: viewProfileButton.leadingAnchor, constant: -10),
             
             viewProfileButton.centerYAnchor.constraint(equalTo: profileContainer.centerYAnchor),
             viewProfileButton.trailingAnchor.constraint(equalTo: profileContainer.trailingAnchor, constant: -15),
@@ -419,21 +423,47 @@ class ProductDetailViewController: UIViewController {
         titleLabel.text = product.name
         priceLabel.text = "Rs. \(Int(product.price)) /-"
         locationLabel.text = product.location
-        timeLabel.text = "Posted 3 hours ago" // Static for demo as requested by visual
+        timeLabel.text = timeAgoString(from: product.createdAt)
         descriptionTextLabel.text = product.productDescription
         highlightsTextLabel.text = product.highlights
         
-        // Prepare gallery images
-        galleryImages = []
+        // Prepare gallery images uniquely
+        var allImages: [Data] = []
         if let coverData = product.coverImage {
-            galleryImages.append(coverData)
+            allImages.append(coverData)
         }
-        galleryImages.append(contentsOf: product.galleryImages)
+        allImages.append(contentsOf: product.galleryImages)
+        
+        // Filter out duplicates while maintaining order
+        var seen = Set<Data>()
+        galleryImages = allImages.filter { data in
+            if seen.contains(data) {
+                return false
+            } else {
+                seen.insert(data)
+                return true
+            }
+        }
         
         pageControl.numberOfPages = galleryImages.count
         pageControl.isHidden = galleryImages.count <= 1
         updateFavoriteButtonState()
         imageCollectionView.reloadData()
+        
+        // Setup User Profile Data
+        if let email = product.publisherEmail,
+           let user = LocalDataManager.shared.fetchUser(email: email) {
+            profileNameLabel.text = "\(user.firstName) \(user.lastName)"
+            if let imageData = user.profileImageData {
+                profileImageView.image = UIImage(data: imageData)
+            } else {
+                profileImageView.image = UIImage(named: "avatar_placeholder")
+            }
+        } else {
+            // Fallback for products without publisherEmail or if user not found
+            profileNameLabel.text = "Udhaarly User"
+            profileImageView.image = UIImage(named: "avatar_placeholder")
+        }
         
         // Setup tags
         // Clear existing tags if any
@@ -486,10 +516,37 @@ class ProductDetailViewController: UIViewController {
     
     private func setupActions() {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        viewProfileButton.addTarget(self, action: #selector(viewProfileTapped), for: .touchUpInside)
+    }
+    
+    @objc private func viewProfileTapped() {
+        guard let email = product.publisherEmail,
+              let publisher = LocalDataManager.shared.fetchUser(email: email) else {
+            return
+        }
+        let vc = UserProfileViewController(user: publisher)
+        navigationController?.pushViewController(vc, animated: true)
     }
     
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
+    }
+    
+    private func timeAgoString(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        let relativeString = formatter.localizedString(for: date, relativeTo: Date())
+        
+        // Customizing "3 hours ago" to "Posted 3 hours ago"
+        // Most formatters will output "3 hours ago" or "in 3 hours"
+        // Let's ensure it starts with "Posted "
+        
+        var timeStr = relativeString
+        if timeStr.lowercased() == "now" {
+            return "Posted just now"
+        }
+        
+        return "Posted \(timeStr)"
     }
 }
 

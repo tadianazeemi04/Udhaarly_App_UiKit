@@ -13,6 +13,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     // MARK: - Properties
     private let scrollView = UIScrollView()
     private let contentView = UIView()
+    var productToEdit: LocalProduct?
     
     // Header Elements
     private lazy var backButton: UIButton = {
@@ -152,6 +153,49 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         
         let tap = UITapGestureRecognizer(target: view, action: #selector(UIView.endEditing))
         view.addGestureRecognizer(tap)
+        
+        if productToEdit != nil {
+            configureForEdit()
+        }
+    }
+    
+    private func configureForEdit() {
+        guard let product = productToEdit else { return }
+        headerTitleLabel.text = "Edit Product"
+        addProductButton.setTitle("Update Product ", for: .normal)
+        
+        nameTextField.text = product.name
+        locationTextField.text = product.location
+        categoryMenuButton.setTitle(product.category, for: .normal)
+        categoryMenuButton.setTitleColor(.black, for: .normal)
+        
+        // Price and Duration
+        priceTextField.text = "\(Int(product.price))"
+        let durationParts = product.duration.components(separatedBy: " ")
+        if durationParts.count == 2 {
+            durationNumberTextField.text = durationParts[0]
+            durationUnitMenuButton.setTitle(durationParts[1], for: .normal)
+            durationUnitMenuButton.setTitleColor(.black, for: .normal)
+        }
+        
+        descriptionTextView.text = product.productDescription
+        highlightsTextView.text = product.highlights
+        
+        // Update Counters
+        nameCounterLabel.text = "\(product.name.count)/255"
+        descriptionCounterLabel.text = "\(product.productDescription.count)"
+        highlightsCounterLabel.text = "\(product.highlights.count)"
+        
+        // Images
+        if let coverData = product.coverImage, let coverImg = UIImage(data: coverData) {
+            updateSlotUI(index: 5, image: coverImg)
+        }
+        
+        for (index, imageData) in product.galleryImages.enumerated() {
+            if index < 5, let img = UIImage(data: imageData) {
+                updateSlotUI(index: index, image: img)
+            }
+        }
     }
     
     private func setupKeyboardHandling() {
@@ -760,23 +804,53 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         let mainImage = selectedImages.compactMap { $0 }.first
         let imageData = mainImage?.jpegData(compressionQuality: 0.8)
         
-        // Create the SwiftData model instance.
-        let newProduct = LocalProduct(
-            name: name,
-            location: location,
-            category: category,
-            price: price,
-            duration: duration,
-            productDescription: desc,
-            highlights: highlights,
-            coverImage: imageData
-        )
+        // Get current user email
+        let publisherEmail = UserDefaults.standard.string(forKey: "currentUserEmail")
         
-        // Save to local container.
-        LocalDataManager.shared.saveProduct(product: newProduct)
-        
-        // Feedback loop
-        let alert = UIAlertController(title: "Success", message: "Product '\(name)' added successfully!", preferredStyle: .alert)
+        if let product = productToEdit {
+            // Update existing product
+            product.name = name
+            product.location = location
+            product.category = category
+            product.price = price
+            product.duration = duration
+            product.productDescription = desc
+            product.highlights = highlights
+            product.coverImage = imageData
+            // Gallery images update: Include ALL 6 slots (0-4 are product, 5 is promotion)
+            let galleryImages = selectedImages.compactMap { $0?.jpegData(compressionQuality: 0.8) }
+            product.galleryImages = galleryImages
+            
+            LocalDataManager.shared.saveContext()
+            
+            showSuccess(message: "Product '\(name)' updated successfully!")
+        } else {
+            // Create the SwiftData model instance.
+            let newProduct = LocalProduct(
+                name: name,
+                location: location,
+                category: category,
+                price: price,
+                duration: duration,
+                productDescription: desc,
+                highlights: highlights,
+                coverImage: imageData,
+                publisherEmail: publisherEmail
+            )
+            
+            // Collect gallery images: Include ALL 6 slots
+            let galleryImages = selectedImages.compactMap { $0?.jpegData(compressionQuality: 0.8) }
+            newProduct.galleryImages = galleryImages
+            
+            // Save to local container.
+            LocalDataManager.shared.saveProduct(product: newProduct)
+            
+            showSuccess(message: "Product '\(name)' added successfully!")
+        }
+    }
+    
+    private func showSuccess(message: String) {
+        let alert = UIAlertController(title: "Success", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
             self?.clearFields()
             self?.performBackNavigation()

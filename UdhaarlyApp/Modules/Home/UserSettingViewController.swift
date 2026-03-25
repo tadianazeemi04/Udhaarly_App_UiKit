@@ -253,6 +253,7 @@ class UserSettingViewController: UIViewController {
             SettingsRow(icon: "heart", title: "Favorites", iconBg: "#FEF2F2", iconColor: "#FD0000"),
             SettingsRow(icon: "mappin.circle", title: "Saved Addresses", iconBg: "#EFF6FF", iconColor: "#007AFF"),
             SettingsRow(icon: "person.circle", title: "Edit Profile", iconBg: "#F5F3FF", iconColor: "#AD46FF"),
+            SettingsRow(icon: "trash", title: "Deleted Ads", iconBg: "#FFF1F2", iconColor: "#F43F5E"),
             SettingsRow(icon: "crown", title: "Pricing Plans", iconBg: "#FFEDD4", iconColor: "#FF5722")
         ]) { [weak self] title in
             if title == "Pricing Plans" {
@@ -273,6 +274,10 @@ class UserSettingViewController: UIViewController {
                 self?.navigationController?.pushViewController(vc, animated: true)
             } else if title == "Edit Profile" {
                 let vc = EditProfileViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Deleted Ads" {
+                let vc = DeletedAdsViewController()
                 vc.hidesBottomBarWhenPushed = true
                 self?.navigationController?.pushViewController(vc, animated: true)
             }

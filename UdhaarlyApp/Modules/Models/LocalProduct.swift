@@ -25,6 +25,8 @@ class LocalProduct {
     var isPremium: Bool
     var isFavorite: Bool = false
     var createdAt: Date
+    var publisherEmail: String?
+    var isDeleted: Bool = false
 
     init(
         id: UUID = UUID(),
@@ -39,7 +41,9 @@ class LocalProduct {
         galleryImages: [Data] = [],
         isPremium: Bool = false,
         isFavorite: Bool = false,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        publisherEmail: String? = nil,
+        isDeleted: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -54,5 +58,7 @@ class LocalProduct {
         self.isPremium = isPremium
         self.isFavorite = isFavorite
         self.createdAt = createdAt
+        self.publisherEmail = publisherEmail
+        self.isDeleted = isDeleted
     }
 }
