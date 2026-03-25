@@ -34,4 +34,4 @@ This document summarizes the key features, UI improvements, and technical debt r
 - **Performance**: Optimized cell reuse and layout constraints for complex nested views.
 
 ---
-*Developed by Antigravity AI for the Udhaarly Project.*
+*Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*
