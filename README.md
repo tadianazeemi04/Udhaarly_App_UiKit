@@ -46,4 +46,4 @@ This document summarizes the key features, UI improvements, and technical debt r
 - **Performance**: Optimized table and collection view cell reuse for smooth scrolling with large datasets.
 
 ---
-*Developed by Antigravity AI for the Udhaarly Project.*
+*Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*
