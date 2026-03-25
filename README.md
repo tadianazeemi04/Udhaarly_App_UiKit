@@ -7,7 +7,7 @@ This document summarizes the key features, UI improvements, and technical debt r
 ### 1. Admin Dashboard 🛡️
 - **Direct Access**: Implemented a secure administrative entry point at the Sign-in screen.
   - **Credentials**: `admin123@admin.com` / `admin123`
-- **User Management**: Unified view of all registered accounts, including high-level visibility into user emails and passwords for platform monitoring/testing.
+- **User Management**: Unified view of all registered-accounts, including high-level visibility into user emails and passwords for platform monitoring/testing.
 - **Product Oversight**: A dedicated tab to view every product listed on the platform with details like price, duration, and location.
 
 ### 2. Favorites System 💖
