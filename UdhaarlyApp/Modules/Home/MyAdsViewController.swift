@@ -178,6 +178,7 @@ extension MyAdsViewController: UITableViewDelegate, UITableViewDataSource {
             alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
                 LocalDataManager.shared.deleteProduct(product: product)
                 self?.fetchData()
+                NotificationCenter.default.post(name: NSNotification.Name("ProductsUpdated"), object: nil)
                 
                 // Show success feedback
                 let successAlert = UIAlertController(title: "Deleted", message: "Product has been removed.", preferredStyle: .alert)

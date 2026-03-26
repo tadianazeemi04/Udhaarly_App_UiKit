@@ -16,13 +16,14 @@ class LocalDataManager {
     
     init() {
         do {
-            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self)
+            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self, LocalRequest.self)
             if let container = container {
                 context = ModelContext(container)
             }
         } catch {
             print("Failed to initialize swiftdata: \(error)")
         }
+        cleanupMissingPublisherProducts()
     }
     
     func fetchProducts() -> [LocalProduct] {
@@ -123,6 +124,107 @@ class LocalDataManager {
     func fetchUser(email: String) -> LocalUser? {
         let descriptor = FetchDescriptor<LocalUser>(predicate: #Predicate { $0.email == email })
         return try? context?.fetch(descriptor).first
+    }
+    
+    // MARK: - Requests Logic
+    func saveRequest(request: LocalRequest) {
+        context?.insert(request)
+        try? context?.save()
+    }
+    
+    func fetchRequests(forEmail email: String, isLender: Bool) -> [LocalRequest] {
+        if isLender {
+            let descriptor = FetchDescriptor<LocalRequest>(
+                predicate: #Predicate { $0.lenderEmail == email },
+                sortBy: [SortDescriptor(\.requestDate, order: .reverse)]
+            )
+            return (try? context?.fetch(descriptor)) ?? []
+        } else {
+            let descriptor = FetchDescriptor<LocalRequest>(
+                predicate: #Predicate { $0.borrowerEmail == email },
+                sortBy: [SortDescriptor(\.requestDate, order: .reverse)]
+            )
+            return (try? context?.fetch(descriptor)) ?? []
+        }
+    }
+    
+    func hasExistingRequest(productId: UUID, borrowerEmail: String) -> Bool {
+        let descriptor = FetchDescriptor<LocalRequest>(
+            predicate: #Predicate { $0.productId == productId && $0.borrowerEmail == borrowerEmail && $0.status == "pending" }
+        )
+        let count = (try? context?.fetchCount(descriptor)) ?? 0
+        return count > 0
+    }
+    
+    func updateRequestStatus(request: LocalRequest, status: String) {
+        request.status = status
+        saveContext()
+    }
+    
+    func updateRequestReturn(request: LocalRequest, condition: String, image: Data) {
+        request.returnDate = Date()
+        request.returnCondition = condition
+        request.returnImage = image
+        request.status = "returned"
+        saveContext()
+    }
+    
+    func updateRequestDelay(request: LocalRequest, extendedTime: String, condition: String, productInUseImage: Data, paymentSlipImage: Data) {
+        request.delayExtendedTime = extendedTime
+        request.delayCondition = condition
+        request.delayProductInUseImage = productInUseImage
+        request.delayPaymentSlipImage = paymentSlipImage
+        request.status = "delayed"
+        saveContext()
+    }
+    
+    func fetchProduct(id: UUID) -> LocalProduct? {
+        let descriptor = FetchDescriptor<LocalProduct>(predicate: #Predicate { $0.id == id })
+        return try? context?.fetch(descriptor).first
+    }
+
+    func fetchAcceptedRequest(productId: UUID) -> LocalRequest? {
+        let descriptor = FetchDescriptor<LocalRequest>(
+            predicate: #Predicate { $0.productId == productId && $0.status == "accepted" }
+        )
+        return try? context?.fetch(descriptor).first
+    }
+    
+    func fetchPendingRequestsCount(forEmail email: String) -> Int {
+        let borrowDescriptor = FetchDescriptor<LocalRequest>(
+            predicate: #Predicate { $0.borrowerEmail == email && $0.status == "pending" }
+        )
+        let lendDescriptor = FetchDescriptor<LocalRequest>(
+            predicate: #Predicate { $0.lenderEmail == email && $0.status == "pending" }
+        )
+        
+        let borrowCount = (try? context?.fetchCount(borrowDescriptor)) ?? 0
+        let lendCount = (try? context?.fetchCount(lendDescriptor)) ?? 0
+        
+        return borrowCount + lendCount
+    }
+    
+    private func cleanupMissingPublisherProducts() {
+        // Fetch all products
+        let descriptor = FetchDescriptor<LocalProduct>()
+        let products = (try? context?.fetch(descriptor)) ?? []
+        
+        // Fetch all users to verify emails
+        let userDescriptor = FetchDescriptor<LocalUser>()
+        let users = (try? context?.fetch(userDescriptor)) ?? []
+        let existingEmails = Set(users.map { $0.email })
+        
+        for product in products {
+            if let email = product.publisherEmail {
+                if !existingEmails.contains(email) {
+                    context?.delete(product)
+                }
+            } else {
+                // Remove products with nil publisher email as well
+                context?.delete(product)
+            }
+        }
+        saveContext()
     }
     
 }

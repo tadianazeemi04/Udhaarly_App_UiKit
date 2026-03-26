@@ -822,7 +822,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             product.galleryImages = galleryImages
             
             LocalDataManager.shared.saveContext()
-            
+            NotificationCenter.default.post(name: NSNotification.Name("ProductsUpdated"), object: nil)
             showSuccess(message: "Product '\(name)' updated successfully!")
         } else {
             // Create the SwiftData model instance.
@@ -844,7 +844,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             
             // Save to local container.
             LocalDataManager.shared.saveProduct(product: newProduct)
-            
+            NotificationCenter.default.post(name: NSNotification.Name("ProductsUpdated"), object: nil)
             showSuccess(message: "Product '\(name)' added successfully!")
         }
     }

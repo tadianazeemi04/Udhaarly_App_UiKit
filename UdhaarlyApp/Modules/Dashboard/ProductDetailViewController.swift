@@ -498,6 +498,30 @@ class ProductDetailViewController: UIViewController {
         label.layoutMargins = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         
         tagsStackView.addArrangedSubview(container)
+        
+        // Check for availability
+        updateBorrowButtonState()
+    }
+
+    private func updateBorrowButtonState() {
+        if let acceptedRequest = LocalDataManager.shared.fetchAcceptedRequest(productId: product.id) {
+            let days = Int(acceptedRequest.duration.components(separatedBy: " ").first ?? "0") ?? 0
+            if let returnDate = Calendar.current.date(byAdding: .day, value: days, to: acceptedRequest.requestDate) {
+                let df = DateFormatter()
+                df.dateFormat = "dd/MM/yyyy"
+                borrowButton.setTitle("Available on: \(df.string(from: returnDate))", for: .normal)
+                borrowButton.backgroundColor = .systemGray4
+                borrowButton.isEnabled = false
+            } else {
+                borrowButton.setTitle("Currently Borrowed", for: .normal)
+                borrowButton.backgroundColor = .systemGray4
+                borrowButton.isEnabled = false
+            }
+        } else {
+            borrowButton.setTitle("Request to Borrow", for: .normal)
+            borrowButton.backgroundColor = UIColor(hex: "#FF6700")
+            borrowButton.isEnabled = true
+        }
     }
     
     private func updateFavoriteButtonState() {
@@ -517,6 +541,7 @@ class ProductDetailViewController: UIViewController {
     private func setupActions() {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         viewProfileButton.addTarget(self, action: #selector(viewProfileTapped), for: .touchUpInside)
+        borrowButton.addTarget(self, action: #selector(borrowTapped), for: .touchUpInside)
     }
     
     @objc private func viewProfileTapped() {
@@ -530,6 +555,45 @@ class ProductDetailViewController: UIViewController {
     
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func borrowTapped() {
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") else {
+            showAlert(title: "Not Logged In", message: "Please log in to make a request.")
+            return
+        }
+
+        guard let publisherEmail = product.publisherEmail else {
+            showAlert(title: "Error", message: "Product publisher information is missing.")
+            return
+        }
+
+        if currentUserEmail == publisherEmail {
+            showAlert(title: "Invalid Action", message: "You cannot request to borrow your own product.")
+            return
+        }
+        
+        if LocalDataManager.shared.hasExistingRequest(productId: product.id, borrowerEmail: currentUserEmail) {
+            showAlert(title: "Request Pending", message: "You have already sent a request for this product.")
+            return
+        }
+
+        let request = LocalRequest(
+            productId: product.id,
+            borrowerEmail: currentUserEmail,
+            lenderEmail: publisherEmail,
+            duration: product.duration
+        )
+
+        LocalDataManager.shared.saveRequest(request: request)
+        NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+        showAlert(title: "Success", message: "Borrow request sent successfully!")
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
     
     private func timeAgoString(from date: Date) -> String {

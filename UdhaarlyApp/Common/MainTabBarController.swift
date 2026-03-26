@@ -25,6 +25,27 @@ class MainTabBarController: UITabBarController {
         setupTabs()
         setupMiddleButton()
         customizeAppearance()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateUserBadge(notification:)), name: NSNotification.Name("RequestsUpdatedCount"), object: nil)
+        updateInitialBadge()
+    }
+
+    @objc private func updateUserBadge(notification: NSNotification) {
+        let count = notification.userInfo?["count"] as? Int ?? 0
+        updateBadgeValue(count: count)
+    }
+
+    private func updateInitialBadge() {
+        guard let email = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let count = LocalDataManager.shared.fetchPendingRequestsCount(forEmail: email)
+        updateBadgeValue(count: count)
+    }
+
+    private func updateBadgeValue(count: Int) {
+        if let userNavController = viewControllers?[3] as? UINavigationController {
+            userNavController.tabBarItem.badgeValue = count > 0 ? "\(count)" : nil
+            userNavController.tabBarItem.badgeColor = .systemRed
+        }
     }
 
     private func setupTabs() {

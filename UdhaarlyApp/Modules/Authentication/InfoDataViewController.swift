@@ -68,6 +68,30 @@ class InfoDataViewController: UIViewController {
         return iv
     }()
     
+    private let cameraContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = .brandOrange
+        view.layer.cornerRadius = 15
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        view.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        
+        let icon = UIImageView(image: UIImage(systemName: "camera.fill"))
+        icon.tintColor = .white
+        icon.contentMode = .scaleAspectFit
+        icon.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(icon)
+        
+        NSLayoutConstraint.activate([
+            icon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            icon.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            icon.widthAnchor.constraint(equalToConstant: 18),
+            icon.heightAnchor.constraint(equalToConstant: 18)
+        ])
+        
+        return view
+    }()
+    
     private func createLabeledField(label: String, placeholder: String, icon:String? = nil) -> UIView {
         
         let titleLabel = UILabel()
@@ -147,6 +171,7 @@ class InfoDataViewController: UIViewController {
         contentView.addSubview(StepsText)
         contentView.addSubview(profileImageLabel)
         contentView.addSubview(profileImageView)
+        contentView.addSubview(cameraContainer)
         
         
         let stack = UIStackView(arrangedSubviews: [firstName, lastName, yourLocation, phoneField, addressField, dobField, startButtun])
@@ -193,6 +218,9 @@ class InfoDataViewController: UIViewController {
             
             profileImageView.topAnchor.constraint(equalTo: profileImageLabel.bottomAnchor, constant: 10),
             profileImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            
+            cameraContainer.bottomAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: -2),
+            cameraContainer.trailingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: -2),
             
             stack.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 10),
 //            stack.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),

@@ -115,6 +115,8 @@ class UserSettingViewController: UIViewController {
         return section
     }()
 
+    private let badgeNotificationName = NSNotification.Name("RequestsUpdatedCount")
+
     // MARK: - Lifecycle
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -128,6 +130,29 @@ class UserSettingViewController: UIViewController {
         setupStats()
         setupSections()
         loadUserData()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRequestsUpdate), name: NSNotification.Name("RequestsUpdated"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRequestsUpdate), name: NSNotification.Name("ProductsUpdated"), object: nil)
+    }
+
+    @objc private func handleRequestsUpdate() {
+        setupStats() // Refresh stats card
+        updateRequestBadge()
+    }
+
+    private func updateRequestBadge() {
+        guard let email = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let count = LocalDataManager.shared.fetchPendingRequestsCount(forEmail: email)
+        
+        // Find the 'Request' row and update its badge
+        for view in generalSection.subviews.compactMap({ $0 as? UIStackView }).first?.arrangedSubviews ?? [] {
+            if let rowView = view as? SettingsRowView, rowView.title == "Request" {
+                rowView.updateBadge(count: count)
+            }
+        }
+        
+        // Also notify tab bar
+        NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdatedCount"), object: nil, userInfo: ["count": count])
     }
 
     private func loadUserData() {
@@ -225,10 +250,17 @@ class UserSettingViewController: UIViewController {
     }
 
     private func setupStats() {
+        // Clear existing stats if refreshing
+        statsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        guard let email = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let pendingCount = LocalDataManager.shared.fetchPendingRequestsCount(forEmail: email)
+        let productCount = LocalDataManager.shared.fetchProducts(forEmail: email).count
+        
         let items = [
             StatItem(value: "4.9", label: "★ Rating"),
-            StatItem(value: "3", label: "Ads"),
-            StatItem(value: "2", label: "Pending Requests"),
+            StatItem(value: "\(productCount)", label: "Ads"),
+            StatItem(value: "\(pendingCount)", label: "Pending Requests"),
             StatItem(value: "15", label: "Reviews")
         ]
         
@@ -245,6 +277,8 @@ class UserSettingViewController: UIViewController {
                 statsStackView.addArrangedSubview(divider)
             }
         }
+        
+        updateRequestBadge()
     }
 
     private func setupSections() {
@@ -455,8 +489,23 @@ class SettingsSectionView: UIView {
 
 class SettingsRowView: UIView {
     var onTap: (() -> Void)?
+    let title: String
+    
+    private let badgeLabel: UILabel = {
+        let label = UILabel()
+        label.backgroundColor = .systemRed
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 10, weight: .bold)
+        label.textAlignment = .center
+        label.layer.cornerRadius = 8
+        label.clipsToBounds = true
+        label.isHidden = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
 
     init(row: SettingsRow) {
+        self.title = row.title
         super.init(frame: .zero)
         
         self.layer.cornerRadius = 8
@@ -485,7 +534,7 @@ class SettingsRowView: UIView {
         chevron.tintColor = .gray
         chevron.contentMode = .scaleAspectFit
         
-        let stack = UIStackView(arrangedSubviews: [iconContainer, titleLabel, UIView(), chevron])
+        let stack = UIStackView(arrangedSubviews: [iconContainer, titleLabel, badgeLabel, UIView(), chevron])
         stack.axis = .horizontal
         stack.spacing = 15
         stack.alignment = .center
@@ -499,6 +548,9 @@ class SettingsRowView: UIView {
             stack.leadingAnchor.constraint(equalTo: leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10),
+            
+            badgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 16),
+            badgeLabel.heightAnchor.constraint(equalToConstant: 16),
             
             iconContainer.widthAnchor.constraint(equalToConstant: 32),
             iconContainer.heightAnchor.constraint(equalToConstant: 32),
@@ -535,6 +587,15 @@ class SettingsRowView: UIView {
 
     @objc private func handleTap() {
         onTap?()
+    }
+
+    func updateBadge(count: Int) {
+        if count > 0 {
+            badgeLabel.text = "\(count)"
+            badgeLabel.isHidden = false
+        } else {
+            badgeLabel.isHidden = true
+        }
     }
 
     required init?(coder: NSCoder) { fatalError() }

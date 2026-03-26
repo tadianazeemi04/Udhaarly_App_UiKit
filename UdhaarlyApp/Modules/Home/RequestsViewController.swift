@@ -87,6 +87,15 @@ class RequestsViewController: UIViewController {
         showBorrowRequests() // Default view
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if borrowButton.backgroundColor == UIColor(hex: "#FF5722") {
+            showBorrowRequests()
+        } else {
+            showLendRequests()
+        }
+    }
+
     private func setupUI() {
         view.backgroundColor = .white
         
@@ -126,10 +135,10 @@ class RequestsViewController: UIViewController {
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             stackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 15),
-            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -15),
+            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 25),
+            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -25),
             stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -30)
+            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -50)
         ])
     }
 
@@ -164,17 +173,131 @@ class RequestsViewController: UIViewController {
     private func showBorrowRequests() {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        let req1 = RequestCardView(name: "Ahamd bashir", phone: "03xxxxxxxxx", isBorrower: true)
-        let req2 = RequestCardView(name: "Ahamd Ali", phone: "03xxxxxxxxx", isBorrower: true)
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let requests = LocalDataManager.shared.fetchRequests(forEmail: currentUserEmail, isLender: false)
         
-        stackView.addArrangedSubview(req1)
-        stackView.addArrangedSubview(req2)
+        if requests.isEmpty {
+            let emptyLabel = UILabel()
+            emptyLabel.text = "No borrow requests found."
+            emptyLabel.textColor = .gray
+            emptyLabel.textAlignment = .center
+            emptyLabel.font = .systemFont(ofSize: 16)
+            stackView.addArrangedSubview(emptyLabel)
+            return
+        }
+
+        for request in requests {
+            let card = RequestCardView(request: request, isLender: false)
+            card.onCancel = { [weak self] in
+                self?.handleCancel(request: request)
+            }
+            card.onReturn = { [weak self] in
+                self?.presentActionVC(mode: .returnProduct, request: request)
+            }
+            card.onDelay = { [weak self] in
+                self?.presentActionVC(mode: .reportDelay, request: request)
+            }
+            stackView.addArrangedSubview(card)
+        }
+    }
+
+    private func presentActionVC(mode: RequestActionMode, request: LocalRequest) {
+        let vc = RequestActionViewController(mode: mode, request: request)
+        vc.onComplete = { [weak self] in
+            self?.showBorrowRequests()
+        }
+        present(vc, animated: true)
     }
 
     private func showLendRequests() {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        let req1 = RequestCardView(name: "Ali Hamid", phone: "03xxxxxxxxx", isBorrower: false)
-        stackView.addArrangedSubview(req1)
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let requests = LocalDataManager.shared.fetchRequests(forEmail: currentUserEmail, isLender: true)
+        
+        if requests.isEmpty {
+            let emptyLabel = UILabel()
+            emptyLabel.text = "No lend requests found."
+            emptyLabel.textColor = .gray
+            emptyLabel.textAlignment = .center
+            emptyLabel.font = .systemFont(ofSize: 16)
+            stackView.addArrangedSubview(emptyLabel)
+            return
+        }
+
+        for request in requests {
+            let card = RequestCardView(request: request, isLender: true)
+            card.onAccept = { [weak self] in
+                self?.handleAccept(request: request)
+            }
+            card.onCancel = { [weak self] in
+                self?.handleDecline(request: request)
+            }
+            card.onChat = { [weak self] in
+                self?.handleChat(request: request)
+            }
+            card.onConfirmReturn = { [weak self] in
+                self?.handleConfirmReturn(request: request)
+            }
+            card.onViewReturnDetails = { [weak self] in
+                self?.handleViewReturnDetails(request: request)
+            }
+            stackView.addArrangedSubview(card)
+        }
+    }
+
+    private func handleConfirmReturn(request: LocalRequest) {
+        let alert = UIAlertController(title: "Confirm Return", message: "Are you sure you want to confirm that this product has been returned to you?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Confirm", style: .default, handler: { [weak self] _ in
+            LocalDataManager.shared.updateRequestStatus(request: request, status: "completed")
+            self?.showLendRequests()
+            NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+        }))
+        present(alert, animated: true)
+    }
+
+    private func handleViewReturnDetails(request: LocalRequest) {
+        let vc = ReturnDetailsViewController(request: request)
+        present(vc, animated: true)
+    }
+
+    private func handleAccept(request: LocalRequest) {
+        let alert = UIAlertController(title: "Accept Request", message: "Are you sure you want to accept this borrow request?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Accept", style: .default, handler: { [weak self] _ in
+            LocalDataManager.shared.updateRequestStatus(request: request, status: "accepted")
+            self?.showLendRequests()
+            NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+        }))
+        present(alert, animated: true)
+    }
+
+    private func handleDecline(request: LocalRequest) {
+        let alert = UIAlertController(title: "Decline Request", message: "Are you sure you want to decline this borrow request?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Decline", style: .destructive, handler: { [weak self] _ in
+            LocalDataManager.shared.updateRequestStatus(request: request, status: "declined")
+            self?.showLendRequests()
+            NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+        }))
+        present(alert, animated: true)
+    }
+
+    private func handleCancel(request: LocalRequest) {
+        let alert = UIAlertController(title: "Cancel Request", message: "Are you sure you want to cancel your borrow request?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Stay", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Cancel Request", style: .destructive, handler: { [weak self] _ in
+            LocalDataManager.shared.updateRequestStatus(request: request, status: "cancelled")
+            self?.showBorrowRequests()
+            NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+        }))
+        present(alert, animated: true)
+    }
+
+    private func handleChat(request: LocalRequest) {
+        let alert = UIAlertController(title: "Chat", message: "Opening chat feature...", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

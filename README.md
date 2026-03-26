@@ -1,36 +1,39 @@
-# Udhaarly App - March 25 Development Progress
+# Udhaarly App - March 26 Development Progress
 
-This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 25th.
+This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 26th.
 
 ## 🚀 New Features & Enhancements
 
-### 1. Dynamic Publisher Information 📢
-- **Real-time User Fetching**: Product detail pages now dynamically display the publisher's name and profile picture from SwiftData.
-- **Improved Context**: Added a "Posted X hours/days ago" timestamp to each ad, giving users better context on listing freshness.
-- **UI Polishing**: Reduced font sizes and adjusted profile image scaling for a more balanced and professional layout.
+### 1. Request Lifecycle & Safety 🛡️
+- **Action Confirmation**: Implemented `UIAlertController` confirmation dialogs for "Accept", "Decline", and "Cancel" actions to prevent accidental status changes.
+* **Smart Availability**: Request cards and product detail pages now dynamically calculate the "Available Again" date based on active rental durations.
+* **UI Polishing**: Standardized button widths (75px) and adjusted card margins (25pt) for a more compact and centered premium layout.
 
-### 2. Comprehensive Ad Lifecycle Management ♻️
-- **Soft Delete Mechanism**: Implemented an `isDeleted` flag for products, allowing users to remove ads from their active feed without immediate data loss.
-- **Recovery Center**: New "Deleted Ads" screen accessible via User Settings, featuring a premium 2-column grid layout for managing removed items.
-- **Restore & Permanent Delete**: Empowered users with one-tap recovery or permanent removal of their deleted ads.
-- **Product Editing**: Fully integrated an "Edit Post" flow within `AddProductViewController`, enabling easy updates to existing listings.
+### 2. Product Return & Delay Workflow 🔄
+- **Evidence-Based Returns**: Borrowers can now mark items as "Returned" by providing a description of the condition and a photo of the item.
+- **Delay Reporting**: Borrowers can report delays by specifying an extended time, uploading a photo of the product in use, and providing a payment slip image for the extension fee.
+- **Model Updates**: Enhanced the `LocalRequest` model to persist high-fidelity return and delay metadata.
 
-### 3. Advanced Multi-Image Carousel 📸
-- **6-Slot Gallery**: Updated the creation flow to capture all 5 product photos plus 1 white-background promotion image.
-- **Image Slider**: Implemented a sliding carousel in the product detail view that uniquely merges all available gallery images for a seamless browsing experience.
+### 3. Lender Confirmation Flow 🤝
+- **Owner Review**: Implemented a mandatory lender confirmation step. Lenders must review the borrower's submitted return evidence before the transaction is finalized.
+- **Inspection View**: New `ReturnDetailsViewController` allows owners to inspect return images and notes in a dedicated modal interface.
+- **Finalization**: Once confirmed, requests transition to "Completed" status, and products are automatically reset to "Available".
 
-### 4. Public User Profiles 👤
-- **Interactive Ratings**: Tapping "View Profile" on any ad now navigates to the advertiser's public profile.
-- **Comprehensive View**: Showcases user ratings, reviews, location, and a horizontal gallery of their other active products.
-- **Modern Design**: Refined with a gradient header, card-style information rows, and premium review cards.
+### 4. Real-time Analytics & Badges 📊
+- **Dynamic Stats Card**: The user profile stats card (Ads, Pending Requests, Reviews) now updates in real-time using `NotificationCenter` whenever products are added, deleted, or requests change status.
+- **Global Badge System**: Implemented a notification-driven badge system for the "Request" row in settings and the main user tab bar, ensuring users never miss a pending action.
+
+### 5. Data Integrity & Maintenance 🧹
+- **Orphan Cleanup**: Added an automated cleanup process in `LocalDataManager` to permanently remove products whose publishers no longer exist in the system, ensuring a clean and relevant dashboard.
 
 ---
 
 ## ⚙️ Technical Foundation
 
-- **SwiftData Relations**: Leveraged cross-context fetching between `LocalUser` and `LocalProduct` via publisher emails.
-- **Data Persistence**: Implemented `LocalReview` model and seeded dummy data for profile evaluations.
-- **Performance**: Optimized collection view layouts for smooth scrolling across nested grids and carousels.
+- **Modular Navigation**: Decoupled request actions into specialized view controllers (`RequestActionViewController`, `ReturnDetailsViewController`) for better maintainability.
+- **Async UI Sync**: Leveraged `NotificationCenter` to synchronize data states across multiple disparate UI components (Tab Bar, Stats Card, Request List).
+- **External Data Storage**: Utilized SwiftData's `@Attribute(.externalStorage)` for efficient handling of return/delay evidence images.
 
 ---
 *Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*
+
