@@ -383,6 +383,14 @@ class InfoDataViewController: UIViewController {
             // 6. Finalize Registration locally
             UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
             UserDefaults.standard.set(email, forKey: "currentUserEmail") // Persist for auto-fill logic
+            
+            /// Create a "Welcome to Udhaarly" notification to greet the new user.
+            NotificationManager.shared.postNotification(
+                title: "Welcome to Udhaarly! ✨",
+                body: "Thank you for joining our community. Start lending and borrowing today!",
+                recipientEmail: email,
+                type: "system"
+            )
         
             // Move to Main Tab Bar
             let tabBar = MainTabBarController()

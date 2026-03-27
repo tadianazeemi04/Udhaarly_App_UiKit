@@ -1,38 +1,35 @@
-# Udhaarly App - March 26 Development Progress
+# Udhaarly App - March 27 Development Progress
 
-This document summarizes the key features, UI improvements, and technical debt resolved during the development session on March 26th.
+This document summarizes the comprehensive **Notification System** and UI enhancements implemented during the March 27th development session.
 
 ## 🚀 New Features & Enhancements
 
-### 1. Request Lifecycle & Safety 🛡️
-- **Action Confirmation**: Implemented `UIAlertController` confirmation dialogs for "Accept", "Decline", and "Cancel" actions to prevent accidental status changes.
-* **Smart Availability**: Request cards and product detail pages now dynamically calculate the "Available Again" date based on active rental durations.
-* **UI Polishing**: Standardized button widths (75px) and adjusted card margins (25pt) for a more compact and centered premium layout.
+### 1. Persistent Notification System 🔔
+- **SwiftData Storage**: Implemented the `LocalNotification` model to store all user alerts locally on the device.
+- **Unified Notification Manager**: Developed a central `NotificationManager` singleton to coordinate in-app banners, database persistence, and internal broadcasts.
+- **Smart Recipient Filtering**: All notifications are uniquely tied to the user's email, ensuring privacy and account-specific history.
 
-### 2. Product Return & Delay Workflow 🔄
-- **Evidence-Based Returns**: Borrowers can now mark items as "Returned" by providing a description of the condition and a photo of the item.
-- **Delay Reporting**: Borrowers can report delays by specifying an extended time, uploading a photo of the product in use, and providing a payment slip image for the extension fee.
-- **Model Updates**: Enhanced the `LocalRequest` model to persist high-fidelity return and delay metadata.
+### 2. Premium UI Redesign (Notifications Screen) ✨
+- **Attractive Card Layout**: Overhauled the notification history screen with a modern card-based design featuring:
+  - **Type Indicators**: Colored side stripes (Orange for Requests, Blue for Chat).
+  - **Icon Backgrounds**: Soft-colored circular containers for better iconography.
+  - **Unread Signals**: Red dot markers for unread items with a "Mark-as-Read" automation.
+- **"Clear All" Functionality**: Added a global "Clear All" button in the header with a confirmation alert to keep the inbox tidy.
+- **Interactive Empty State**: Designed a beautiful centered stack with a wave-bell icon for when no notifications are present.
 
-### 3. Lender Confirmation Flow 🤝
-- **Owner Review**: Implemented a mandatory lender confirmation step. Lenders must review the borrower's submitted return evidence before the transaction is finalized.
-- **Inspection View**: New `ReturnDetailsViewController` allows owners to inspect return images and notes in a dedicated modal interface.
-- **Finalization**: Once confirmed, requests transition to "Completed" status, and products are automatically reset to "Available".
+### 3. User Lifecycle Alerts 🐣
+- **Welcome Notifications**: Automated "Welcome Back" alerts upon login and "Welcome to Udhaarly" alerts for new registrations.
+- **Request Triggers**: Integrated real-time notifications into the request lifecycle (Request Sent, Accepted, Returned, Delayed).
 
-### 4. Real-time Analytics & Badges 📊
-- **Dynamic Stats Card**: The user profile stats card (Ads, Pending Requests, Reviews) now updates in real-time using `NotificationCenter` whenever products are added, deleted, or requests change status.
-- **Global Badge System**: Implemented a notification-driven badge system for the "Request" row in settings and the main user tab bar, ensuring users never miss a pending action.
-
-### 5. Data Integrity & Maintenance 🧹
-- **Orphan Cleanup**: Added an automated cleanup process in `LocalDataManager` to permanently remove products whose publishers no longer exist in the system, ensuring a clean and relevant dashboard.
+### 4. Dashboard Integration 📊
+- **Dynamic Notification Bell**: Added an interactive bell icon to the Dashboard header with a real-time red badge showing the unread count.
+- **Real-time Sync**: Leveraged `NotificationCenter` to synchronize the Dashboard badge instantly as notifications are read or cleared.
 
 ---
 
-## ⚙️ Technical Foundation
-
-- **Modular Navigation**: Decoupled request actions into specialized view controllers (`RequestActionViewController`, `ReturnDetailsViewController`) for better maintainability.
-- **Async UI Sync**: Leveraged `NotificationCenter` to synchronize data states across multiple disparate UI components (Tab Bar, Stats Card, Request List).
-- **External Data Storage**: Utilized SwiftData's `@Attribute(.externalStorage)` for efficient handling of return/delay evidence images.
+## 🛠️ Bug Fixes & Stability
+- **Infinite Recursion Fix**: Resolved a critical "Stack Overflow" crash caused by a circular notification loop between the badge update and the mark-as-read logic.
+- **UserDefaults Key Sync**: Standardized the account identifier key to `currentUserEmail` across all modules to ensure reliable data retrieval.
 
 ---
 *Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*

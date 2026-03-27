@@ -237,6 +237,15 @@ class SigninViewController: UIViewController {
                     // Profile exists: Returning user.
                     UserDefaults.standard.set(true, forKey: "isUserLoggedIn")
                     UserDefaults.standard.set(email, forKey: "currentUserEmail")
+                    
+                    /// Create a "Welcome Back" notification to log the successful login event.
+                    NotificationManager.shared.postNotification(
+                        title: "Welcome Back! 👋",
+                        body: "You have successfully logged into your Udhaarly account.",
+                        recipientEmail: email,
+                        type: "system"
+                    )
+                    
                     let tabBar = MainTabBarController()
                     navigationController?.setViewControllers([tabBar], animated: true)
                 } else {

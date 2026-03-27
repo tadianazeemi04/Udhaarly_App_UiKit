@@ -147,6 +147,45 @@ class DashboardViewController: UIViewController {
         return cv
     }()
     
+    // MARK: - Header Components
+    
+    /// The application logo displayed in the top header section.
+    private let logoImageView: UIImageView = {
+        let iv = UIImageView(image: UIImage(resource: .udhaarlyLogo).withRenderingMode(.alwaysTemplate))
+        iv.tintColor = .brandOrange
+        iv.contentMode = .scaleAspectFit
+        return iv
+    }()
+    
+    /// The interactive bell button that navigates to the notifications screen.
+    private let bellButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setImage(UIImage(systemName: "bell.fill"), for: .normal)
+        btn.tintColor = .black
+        btn.backgroundColor = .white
+        btn.layer.cornerRadius = 20
+        btn.addDropShadow(opacity: 0.1, radius: 4)
+        return btn
+    }()
+    
+    /// A small red badge indicating the current unread notification count.
+    private let bellBadgeView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .red
+        view.layer.cornerRadius = 8
+        view.isHidden = true // Hidden by default if zero unread
+        return view
+    }()
+    
+    /// Label for the number inside the bell badge.
+    private let badgeLabel: UILabel = {
+        let label = UILabel()
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 10, weight: .bold)
+        label.textAlignment = .center
+        return label
+    }()
+    
     private var gradientLayer: CAGradientLayer?
 
     // MARK: - Lifecycle
@@ -160,7 +199,17 @@ class DashboardViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        fetchProducts() // Refresh when coming back
+        fetchProducts() // Refresh the ads from local persistence.
+        updateNotificationBadge() // Refresh the unread count when returning to dashboard.
+        
+        /// Listen for internal notifications to update the badge in real-time.
+        NotificationCenter.default.addObserver(self, selector: #selector(updateNotificationBadge), name: .didReceiveNewNotification, object: nil)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        /// Clean up observers to prevent redundant calls.
+        NotificationCenter.default.removeObserver(self, name: .didReceiveNewNotification, object: nil)
     }
     
     override func viewDidLayoutSubviews() {
@@ -172,14 +221,20 @@ class DashboardViewController: UIViewController {
     private func setupLayout() {
         
         upgradeButton.addTarget(self, action: #selector(didtapUpgrade), for: .touchUpInside)
+        bellButton.addTarget(self, action: #selector(didTapBell), for: .touchUpInside)
         
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
-        [searchContainer, categoryHeaderLabel, categoryCollectionView, premiumBannerView, recentAdsHeaderLabel, adsCollectionView].forEach {
+        [logoImageView, bellButton, searchContainer, categoryHeaderLabel, categoryCollectionView, premiumBannerView, recentAdsHeaderLabel, adsCollectionView].forEach {
             contentView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
+        
+        bellButton.addSubview(bellBadgeView)
+        bellBadgeView.addSubview(badgeLabel)
+        bellBadgeView.translatesAutoresizingMaskIntoConstraints = false
+        badgeLabel.translatesAutoresizingMaskIntoConstraints = false
         
         searchContainer.addSubview(searchIcon)
         searchContainer.addSubview(searchTextField)
@@ -191,6 +246,8 @@ class DashboardViewController: UIViewController {
         
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
+        bellButton.translatesAutoresizingMaskIntoConstraints = false
         searchIcon.translatesAutoresizingMaskIntoConstraints = false
         searchTextField.translatesAutoresizingMaskIntoConstraints = false
         premiumIcon.translatesAutoresizingMaskIntoConstraints = false
@@ -210,7 +267,25 @@ class DashboardViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             
-            searchContainer.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            logoImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            logoImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            logoImageView.widthAnchor.constraint(equalToConstant: 120),
+            logoImageView.heightAnchor.constraint(equalToConstant: 40),
+            
+            bellButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            bellButton.centerYAnchor.constraint(equalTo: logoImageView.centerYAnchor),
+            bellButton.widthAnchor.constraint(equalToConstant: 40),
+            bellButton.heightAnchor.constraint(equalToConstant: 40),
+            
+            bellBadgeView.topAnchor.constraint(equalTo: bellButton.topAnchor, constant: 2),
+            bellBadgeView.trailingAnchor.constraint(equalTo: bellButton.trailingAnchor, constant: -2),
+            bellBadgeView.widthAnchor.constraint(equalToConstant: 16),
+            bellBadgeView.heightAnchor.constraint(equalToConstant: 16),
+            
+            badgeLabel.centerXAnchor.constraint(equalTo: bellBadgeView.centerXAnchor),
+            badgeLabel.centerYAnchor.constraint(equalTo: bellBadgeView.centerYAnchor),
+            
+            searchContainer.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 20),
             searchContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             searchContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             searchContainer.heightAnchor.constraint(equalToConstant: 50),
@@ -280,6 +355,27 @@ class DashboardViewController: UIViewController {
         // Find existing height constraint and update it
         if let heightConstraint = adsCollectionView.constraints.first(where: { $0.firstAttribute == .height }) {
             heightConstraint.constant = CGFloat(height)
+        }
+    }
+    
+    // MARK: - Actions
+    
+    /// Navigates to the Notifications list with a custom push transition.
+    @objc private func didTapBell() {
+        let notificationsVC = NotificationsViewController()
+        notificationsVC.hidesBottomBarWhenPushed = true
+        self.navigationController?.pushViewController(notificationsVC, animated: true)
+    }
+    
+    /// Updates the unread badge count by checking local persistence.
+    @objc private func updateNotificationBadge() {
+        /// Standardized key 'currentUserEmail' is used throughout the app for the active session.
+        guard let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
+        let unreadCount = LocalDataManager.shared.fetchUnreadNotificationsCount(forEmail: currentEmail)
+        
+        DispatchQueue.main.async {
+            self.bellBadgeView.isHidden = (unreadCount == 0)
+            self.badgeLabel.text = "\(unreadCount)"
         }
     }
 }

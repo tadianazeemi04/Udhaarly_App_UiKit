@@ -13,7 +13,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        /// [DISBALED] Focusing on in-app notifications for now.
+        // NotificationManager.shared.requestAuthorization()
+        
         return true
     }
 

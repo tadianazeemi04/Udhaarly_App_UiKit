@@ -15,14 +15,17 @@ class LocalDataManager {
     var context: ModelContext?
     
     init() {
+        /// Attempt to initialize the SwiftData ModelContainer with all managed entities including the new notification model.
         do {
-            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self, LocalRequest.self)
+            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self, LocalRequest.self, LocalNotification.self)
             if let container = container {
                 context = ModelContext(container)
             }
         } catch {
+            /// Log any initialization failures for debugging purposes.
             print("Failed to initialize swiftdata: \(error)")
         }
+        /// Clean up orphaned products to maintain database integrity.
         cleanupMissingPublisherProducts()
     }
     
@@ -130,6 +133,15 @@ class LocalDataManager {
     func saveRequest(request: LocalRequest) {
         context?.insert(request)
         try? context?.save()
+        
+        /// Trigger a notification for the lender when someone wants to borrow their item.
+        NotificationManager.shared.postNotification(
+            title: "New Borrow Request",
+            body: "Someone wants to borrow your item. Tap to view.",
+            recipientEmail: request.lenderEmail,
+            type: "request",
+            relatedId: request.productId.uuidString
+        )
     }
     
     func fetchRequests(forEmail email: String, isLender: Bool) -> [LocalRequest] {
@@ -159,6 +171,18 @@ class LocalDataManager {
     func updateRequestStatus(request: LocalRequest, status: String) {
         request.status = status
         saveContext()
+        
+        /// Notify the borrower of the lender's decision or status update.
+        let statusTitle = status == "accepted" ? "Request Accepted! 🎉" : "Request Update"
+        let statusBody = "Your request for the item has been updated to '\(status)'."
+        
+        NotificationManager.shared.postNotification(
+            title: statusTitle,
+            body: statusBody,
+            recipientEmail: request.borrowerEmail,
+            type: "request",
+            relatedId: request.productId.uuidString
+        )
     }
     
     func updateRequestReturn(request: LocalRequest, condition: String, image: Data) {
@@ -167,8 +191,24 @@ class LocalDataManager {
         request.returnImage = image
         request.status = "returned"
         saveContext()
+        
+        /// Alert the lender that their item has been returned and needs inspection.
+        NotificationManager.shared.postNotification(
+            title: "Item Returned",
+            body: "An item has been returned by the borrower. Please inspect it.",
+            recipientEmail: request.lenderEmail,
+            type: "request",
+            relatedId: request.productId.uuidString
+        )
     }
     
+    /// Updates a request with delay details and notifies the lender.
+    /// - Parameters:
+    ///   - request: The LocalRequest being modified.
+    ///   - extendedTime: The additional time requested.
+    ///   - condition: The current status of the item.
+    ///   - productInUseImage: Evidence of the product currently being used.
+    ///   - paymentSlipImage: Proof of secondary payment for the extension.
     func updateRequestDelay(request: LocalRequest, extendedTime: String, condition: String, productInUseImage: Data, paymentSlipImage: Data) {
         request.delayExtendedTime = extendedTime
         request.delayCondition = condition
@@ -176,6 +216,15 @@ class LocalDataManager {
         request.delayPaymentSlipImage = paymentSlipImage
         request.status = "delayed"
         saveContext()
+        
+        /// Notify the lender about a delay request.
+        NotificationManager.shared.postNotification(
+            title: "Delay Requested",
+            body: "A borrower has requested a delay for your item. Tap to view details.",
+            recipientEmail: request.lenderEmail,
+            type: "request",
+            relatedId: request.productId.uuidString
+        )
     }
     
     func fetchProduct(id: UUID) -> LocalProduct? {
@@ -202,6 +251,53 @@ class LocalDataManager {
         let lendCount = (try? context?.fetchCount(lendDescriptor)) ?? 0
         
         return borrowCount + lendCount
+    }
+    
+    // MARK: - Notifications Logic
+    
+    /// Saves a newly created notification to the persistent store.
+    /// - Parameter notification: The LocalNotification instance to persist.
+    func saveNotification(notification: LocalNotification) {
+        context?.insert(notification)
+        saveContext()
+    }
+    
+    /// Retrieves all notifications for a specific user, ordered by creation date (newest first).
+    /// - Parameter email: The email address of the recipient.
+    /// - Returns: An array of LocalNotification objects.
+    func fetchNotifications(forEmail email: String) -> [LocalNotification] {
+        let descriptor = FetchDescriptor<LocalNotification>(
+            predicate: #Predicate { $0.recipientEmail == email },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
+    /// Counts unread notifications for a user to update badge UI.
+    /// - Parameter email: The email address of the user.
+    /// - Returns: The integer count of unread notifications.
+    func fetchUnreadNotificationsCount(forEmail email: String) -> Int {
+        let descriptor = FetchDescriptor<LocalNotification>(
+            predicate: #Predicate { $0.recipientEmail == email && $0.isRead == false }
+        )
+        return (try? context?.fetchCount(descriptor)) ?? 0
+    }
+    
+    /// Marks all unread notifications as read to clear badges.
+    /// - Parameter email: The email address of the recipient.
+    func markAllNotificationsAsRead(forEmail email: String) {
+        let notifications = fetchNotifications(forEmail: email)
+        for notification in notifications {
+            notification.isRead = true
+        }
+        saveContext()
+    }
+    
+    /// Deletes a specific notification from persistence.
+    /// - Parameter notification: The notification to permanently remove.
+    func deleteNotification(notification: LocalNotification) {
+        context?.delete(notification)
+        saveContext()
     }
     
     private func cleanupMissingPublisherProducts() {
