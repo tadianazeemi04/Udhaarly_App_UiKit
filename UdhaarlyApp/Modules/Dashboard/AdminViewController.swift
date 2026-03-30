@@ -2,7 +2,7 @@
 //  AdminViewController.swift
 //  UdhaarlyApp
 //
-//  Created by Antigravity on 19/03/2026.
+//  Created by Tadian Ahmad Azeemi on 19/03/2026.
 //
 
 import UIKit

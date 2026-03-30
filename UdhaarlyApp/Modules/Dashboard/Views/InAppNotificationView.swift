@@ -2,7 +2,7 @@
 //  InAppNotificationView.swift
 //  UdhaarlyApp
 //
-//  Created by Antigravity on 27/03/2026.
+//  Created by Tadian Ahmad Azeemi on 27/03/2026.
 //
 
 import UIKit

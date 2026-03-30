@@ -2,7 +2,7 @@
 //  SubscriptionViewController.swift
 //  UdhaarlyApp
 //
-//  Created by Antigravity on 13/03/2026.
+//  Created by Tadian Ahmad Azeemi on 13/03/2026.
 //
 
 import UIKit
