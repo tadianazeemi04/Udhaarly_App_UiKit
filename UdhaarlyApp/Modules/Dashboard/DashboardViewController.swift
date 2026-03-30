@@ -15,13 +15,7 @@ class DashboardViewController: UIViewController {
     private var allProducts: [LocalProduct] = []
     private var filteredProducts: [LocalProduct] = []
     
-    private let categories = [
-        (title: "Mobile", icon: "iphone"),
-        (title: "Fashion", icon: "tshirt"),
-        (title: "Home", icon: "house"),
-        (title: "Electronics", icon: "desktopcomputer"),
-        (title: "Books", icon: "book")
-    ]
+    private let categoriesList: [Category] = [.all, .mobile, .fashion, .homeDecor, .electronics, .books, .software]
     
     // MARK: - UI Components
     private let scrollView: UIScrollView = {
@@ -60,6 +54,14 @@ class DashboardViewController: UIViewController {
         label.font = .systemFont(ofSize: 18, weight: .bold)
         label.textColor = .black
         return label
+    }()
+    
+    private let seeAllCategoriesButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("See All", for: .normal)
+        btn.setTitleColor(.brandOrange, for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        return btn
     }()
     
     private lazy var categoryCollectionView: UICollectionView = {
@@ -222,11 +224,12 @@ class DashboardViewController: UIViewController {
         
         upgradeButton.addTarget(self, action: #selector(didtapUpgrade), for: .touchUpInside)
         bellButton.addTarget(self, action: #selector(didTapBell), for: .touchUpInside)
+        seeAllCategoriesButton.addTarget(self, action: #selector(didTapSeeAllCategories), for: .touchUpInside)
         
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
-        [logoImageView, bellButton, searchContainer, categoryHeaderLabel, categoryCollectionView, premiumBannerView, recentAdsHeaderLabel, adsCollectionView].forEach {
+        [logoImageView, bellButton, searchContainer, categoryHeaderLabel, seeAllCategoriesButton, categoryCollectionView, premiumBannerView, recentAdsHeaderLabel, adsCollectionView].forEach {
             contentView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
@@ -303,6 +306,9 @@ class DashboardViewController: UIViewController {
             categoryHeaderLabel.topAnchor.constraint(equalTo: searchContainer.bottomAnchor, constant: 25),
             categoryHeaderLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             
+            seeAllCategoriesButton.centerYAnchor.constraint(equalTo: categoryHeaderLabel.centerYAnchor),
+            seeAllCategoriesButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
             categoryCollectionView.topAnchor.constraint(equalTo: categoryHeaderLabel.bottomAnchor, constant: 15),
             categoryCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             categoryCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
@@ -378,13 +384,19 @@ class DashboardViewController: UIViewController {
             self.badgeLabel.text = "\(unreadCount)"
         }
     }
+    
+    @objc private func didTapSeeAllCategories() {
+        let vc = CategoriesViewController()
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
+    }
 }
 
 // MARK: - CollectionView Delegate & DataSource
 extension DashboardViewController: UICollectionViewDelegate, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         if collectionView == categoryCollectionView {
-            return categories.count
+            return categoriesList.count
         } else {
             return filteredProducts.count
         }
@@ -393,7 +405,8 @@ extension DashboardViewController: UICollectionViewDelegate, UICollectionViewDat
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if collectionView == categoryCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: DashboardCategoryCell.identifier, for: indexPath) as! DashboardCategoryCell
-            cell.configure(with: categories[indexPath.item])
+            let category = categoriesList[indexPath.item]
+            cell.configure(with: (title: category.rawValue, icon: category.iconName))
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: DashboardProductCell.identifier, for: indexPath) as! DashboardProductCell
@@ -403,7 +416,12 @@ extension DashboardViewController: UICollectionViewDelegate, UICollectionViewDat
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if collectionView == adsCollectionView {
+        if collectionView == categoryCollectionView {
+            let selectedCategory = categoriesList[indexPath.item]
+            let resultsVC = CategoryProductsViewController(category: selectedCategory)
+            resultsVC.hidesBottomBarWhenPushed = true
+            navigationController?.pushViewController(resultsVC, animated: true)
+        } else if collectionView == adsCollectionView {
             let product = filteredProducts[indexPath.item]
             let detailVC = ProductDetailViewController(product: product)
             navigationController?.pushViewController(detailVC, animated: true)

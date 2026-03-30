@@ -237,7 +237,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
 
     private func setupMenus() {
         // Category Menu
-        let categories = ["Software", "Home Decors", "Electronics", "Furniture", "Fashion", "Other"]
+        let categories = Category.allCases.filter { $0 != .all }.map { $0.rawValue }
         let catActions = categories.map { cat in
             UIAction(title: cat) { [weak self] _ in 
                 self?.categoryMenuButton.setTitle(cat, for: .normal)

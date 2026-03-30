@@ -37,6 +37,15 @@ class LocalDataManager {
         return (try? context?.fetch(descriptor)) ?? []
     }
     
+    /// Fetches all active products belonging to a specific category.
+    func fetchProducts(byCategory category: String) -> [LocalProduct] {
+        let descriptor = FetchDescriptor<LocalProduct>(
+            predicate: #Predicate { $0.isDeleted == false && $0.category == category },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
     func fetchProducts(forEmail email: String) -> [LocalProduct] {
         let descriptor = FetchDescriptor<LocalProduct>(
             predicate: #Predicate { $0.isDeleted == false && $0.publisherEmail == email },
