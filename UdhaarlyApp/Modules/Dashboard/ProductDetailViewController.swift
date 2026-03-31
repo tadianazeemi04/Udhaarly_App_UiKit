@@ -268,6 +268,11 @@ class ProductDetailViewController: UIViewController {
         setupActions()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
     // MARK: - Setup
     private func setupLayout() {
         view.addSubview(scrollView)

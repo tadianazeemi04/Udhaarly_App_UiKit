@@ -226,6 +226,9 @@ class DashboardViewController: UIViewController {
         bellButton.addTarget(self, action: #selector(didTapBell), for: .touchUpInside)
         seeAllCategoriesButton.addTarget(self, action: #selector(didTapSeeAllCategories), for: .touchUpInside)
         
+        searchTextField.delegate = self
+        searchTextField.returnKeyType = .search
+        
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
@@ -426,5 +429,20 @@ extension DashboardViewController: UICollectionViewDelegate, UICollectionViewDat
             let detailVC = ProductDetailViewController(product: product)
             navigationController?.pushViewController(detailVC, animated: true)
         }
+    }
+}
+
+// MARK: - UITextField Delegate
+extension DashboardViewController: UITextFieldDelegate {
+    func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+        // Only run this if the selected text field is our searchTextField
+        if textField == searchTextField {
+            let searchVC = SearchViewController()
+            searchVC.hidesBottomBarWhenPushed = true
+            navigationController?.pushViewController(searchVC, animated: true)
+            // Return false so the local keyboard doesn't actually pop up on the dashboard
+            return false
+        }
+        return true
     }
 }

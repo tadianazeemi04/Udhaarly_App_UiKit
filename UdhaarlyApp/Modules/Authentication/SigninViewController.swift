@@ -245,9 +245,15 @@ class SigninViewController: UIViewController {
                         recipientEmail: email,
                         type: "system"
                     )
-                    
                     let tabBar = MainTabBarController()
-                    navigationController?.setViewControllers([tabBar], animated: true)
+                    
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let window = windowScene.windows.first {
+                        window.rootViewController = tabBar
+                        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: nil, completion: nil)
+                    } else {
+                        self.navigationController?.setViewControllers([tabBar], animated: true)
+                    }
                 } else {
                     // Profile missing: Credential-only user (e.g. registered but didn't finish Info setup).
                     // Navigate to InfoData to complete registration.

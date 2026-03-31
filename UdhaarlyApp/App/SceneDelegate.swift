@@ -21,18 +21,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: windowScene)
         
         let isLogged = UserDefaults.standard.bool(forKey: "isUserLoggedIn")
-        let rootVC: UIViewController
         
         if isLogged {
-            rootVC = MainTabBarController()
+            // Main App Flow: Tab bar manages its own navigation controllers per tab.
+            window?.rootViewController = MainTabBarController()
         } else {
-            // Placeholder: Typically this would be a Login or Welcome screen
-            // For now, I'll use HomeViewController as the entry for the auth flow
-            rootVC = HomeViewController()
+            // Auth Flow: Wrap in a parent navigation controller.
+            let rootVC = HomeViewController()
+            let navigationController = UINavigationController(rootViewController: rootVC)
+            window?.rootViewController = navigationController
         }
         
-        let navigationController = UINavigationController(rootViewController: rootVC)
-        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
         
     }
