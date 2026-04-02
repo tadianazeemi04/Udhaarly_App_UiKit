@@ -17,7 +17,7 @@ class LocalDataManager {
     init() {
         /// Attempt to initialize the SwiftData ModelContainer with all managed entities including the new notification model.
         do {
-            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self, LocalRequest.self, LocalNotification.self)
+            container = try ModelContainer(for: LocalUser.self, LocalProduct.self, LocalReview.self, LocalRequest.self, LocalNotification.self, LocalChat.self, LocalMessage.self)
             if let container = container {
                 context = ModelContext(container)
             }
@@ -330,6 +330,69 @@ class LocalDataManager {
             }
         }
         saveContext()
+    }
+    // MARK: - Chat & Messaging Logic
+    
+    /// Initiates a brand new persistent chat thread between two users.
+    /// - Parameters:
+    ///   - productId: The product this inquiry is about.
+    ///   - participant1: First user in the chat.
+    ///   - participant2: Expected product owner or second user.
+    /// - Returns: The newly created `LocalChat` instance.
+    func createChat(productId: UUID?, participant1: String, participant2: String) -> LocalChat {
+        let newChat = LocalChat(productId: productId, participant1Email: participant1, participant2Email: participant2)
+        context?.insert(newChat)
+        saveContext()
+        return newChat
+    }
+    
+    /// Fetches the list of conversations involving the given email to populate the Chats Inbox.
+    /// The chats are ordered with the most recently active ones appearing first.
+    func fetchChats(forEmail email: String) -> [LocalChat] {
+        let descriptor = FetchDescriptor<LocalChat>(
+            predicate: #Predicate { $0.participant1Email == email || $0.participant2Email == email },
+            sortBy: [SortDescriptor(\.lastUpdated, order: .reverse)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
+    /// Searches for an existing conversation between two specific users about a product.
+    /// SwiftData predicates sometimes fail with loose OR logic and optionals,
+    /// so this manually checks participant combinations efficiently.
+    func fetchChat(productId: UUID?, participant1: String, participant2: String) -> LocalChat? {
+        let chats = fetchChats(forEmail: participant1)
+        return chats.first { chat in
+            let matchesParticipant2 = chat.participant1Email == participant2 || chat.participant2Email == participant2
+            return matchesParticipant2 && chat.productId == productId
+        }
+    }
+    
+    /// Commits a new underlying `LocalMessage` to SwiftData and updates its parent `LocalChat`.
+    /// - Parameters:
+    ///   - chatId: Link to the `LocalChat` model this message is for.
+    ///   - senderEmail: The current logged user's email sending the text.
+    ///   - content: The actual text being sent.
+    func sendMessage(chatId: UUID, senderEmail: String, content: String) {
+        let message = LocalMessage(chatId: chatId, senderEmail: senderEmail, content: content)
+        context?.insert(message)
+        
+        let descriptor = FetchDescriptor<LocalChat>(predicate: #Predicate { $0.id == chatId })
+        if let chat = (try? context?.fetch(descriptor))?.first {
+            chat.lastMessage = content
+            chat.lastUpdated = Date()
+        }
+        
+        saveContext()
+    }
+    
+    /// Given a chat ID, pulls out all the historically sent messages from oldest to newest.
+    /// This is used to render the scrolling chat bubbles in the Detail Controller.
+    func fetchMessages(forChatId chatId: UUID) -> [LocalMessage] {
+        let descriptor = FetchDescriptor<LocalMessage>(
+            predicate: #Predicate { $0.chatId == chatId },
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
     }
     
 }

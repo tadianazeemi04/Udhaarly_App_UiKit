@@ -7,24 +7,11 @@
 
 import UIKit
 
+/// This controller manages the Inbox screen displaying a list of all active conversations.
 class ChatsViewController: UIViewController {
 
-    // MARK: - Data Mockup
-    private struct ChatHistory {
-        let name: String
-        let message: String
-        let time: String
-        let unreadCount: Int
-    }
-
-    private let chatHistory: [ChatHistory] = [
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3),
-        ChatHistory(name: "Ahmad Bashir", message: "Hey is this available in other flavor", time: "11:38 AM", unreadCount: 3)
-    ]
+    /// Holds the list of conversations fetched from SwiftData.
+    private var chats: [LocalChat] = []
 
     // MARK: - UI Components
     private let titleLabel: UILabel = {
@@ -47,6 +34,7 @@ class ChatsViewController: UIViewController {
         return tv
     }()
 
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
@@ -55,9 +43,21 @@ class ChatsViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // Ensure the global navigation bar doesn't interfere with our custom title label
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        
+        // Refresh chats every time the view is about to appear to ensure we have the latest
+        fetchChats()
+    }
+    
+    /// Queries the LocalDataManager for all active chat threads that the current user is a part of.
+    private func fetchChats() {
+        guard let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") else { return }
+        self.chats = LocalDataManager.shared.fetchChats(forEmail: currentEmail)
+        tableView.reloadData()
     }
 
+    // MARK: - Setup
     private func setupLayout() {
         view.addSubview(titleLabel)
         view.addSubview(tableView)
@@ -74,16 +74,40 @@ class ChatsViewController: UIViewController {
     }
 }
 
+// MARK: - Table View Handling
 extension ChatsViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return chatHistory.count
+        return chats.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: ChatCell.identifier, for: indexPath) as! ChatCell
-        let chat = chatHistory[indexPath.row]
-        cell.configure(name: chat.name, message: chat.message, time: chat.time, badgeCount: chat.unreadCount)
+        let chat = chats[indexPath.row]
+        let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") ?? ""
+        
+        // Determine the opposing participant's email to display their name instead of our own.
+        let otherParticipant = (chat.participant1Email == currentEmail) ? chat.participant2Email : chat.participant1Email
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.timeStyle = .short
+        let timeString = dateFormatter.string(from: chat.lastUpdated)
+        let messageText = chat.lastMessage ?? "Start a conversation"
+        
+        cell.configure(name: otherParticipant, message: messageText, time: timeString, badgeCount: 0)
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let chat = chats[indexPath.row]
+        let detailVC = ChatDetailViewController()
+        
+        // Pass the unique chat id to the detail view controller so it loads the correct messages string
+        detailVC.chatId = chat.id
+        
+        let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") ?? ""
+        detailVC.otherParticipantEmail = (chat.participant1Email == currentEmail) ? chat.participant2Email : chat.participant1Email
+        
+        navigationController?.pushViewController(detailVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {

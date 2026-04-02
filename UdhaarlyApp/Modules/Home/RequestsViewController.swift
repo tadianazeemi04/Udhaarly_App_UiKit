@@ -296,8 +296,21 @@ class RequestsViewController: UIViewController {
     }
 
     private func handleChat(request: LocalRequest) {
-        let alert = UIAlertController(title: "Chat", message: "Opening chat feature...", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") else { return }
+        
+        // For lenders, the other person is the borrower.
+        let otherParticipant = (currentUserEmail == request.lenderEmail) ? request.borrowerEmail : request.lenderEmail
+        
+        let chat: LocalChat
+        if let existingChat = LocalDataManager.shared.fetchChat(productId: request.productId, participant1: currentUserEmail, participant2: otherParticipant) {
+            chat = existingChat
+        } else {
+            chat = LocalDataManager.shared.createChat(productId: request.productId, participant1: currentUserEmail, participant2: otherParticipant)
+        }
+        
+        let detailVC = ChatDetailViewController()
+        detailVC.chatId = chat.id
+        detailVC.otherParticipantEmail = otherParticipant
+        navigationController?.pushViewController(detailVC, animated: true)
     }
 }

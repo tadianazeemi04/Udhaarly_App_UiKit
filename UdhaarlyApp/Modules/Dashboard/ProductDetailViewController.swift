@@ -547,6 +547,7 @@ class ProductDetailViewController: UIViewController {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         viewProfileButton.addTarget(self, action: #selector(viewProfileTapped), for: .touchUpInside)
         borrowButton.addTarget(self, action: #selector(borrowTapped), for: .touchUpInside)
+        chatButton.addTarget(self, action: #selector(chatTapped), for: .touchUpInside)
     }
     
     @objc private func viewProfileTapped() {
@@ -560,6 +561,34 @@ class ProductDetailViewController: UIViewController {
     
     @objc private func backTapped() {
         navigationController?.popViewController(animated: true)
+    }
+    @objc private func chatTapped() {
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") else {
+            showAlert(title: "Not Logged In", message: "Please log in to chat.")
+            return
+        }
+
+        guard let publisherEmail = product.publisherEmail else {
+            showAlert(title: "Error", message: "Product publisher information is missing.")
+            return
+        }
+
+        if currentUserEmail == publisherEmail {
+            showAlert(title: "Invalid Action", message: "You cannot chat with yourself.")
+            return
+        }
+        
+        let chat: LocalChat
+        if let existingChat = LocalDataManager.shared.fetchChat(productId: product.id, participant1: currentUserEmail, participant2: publisherEmail) {
+            chat = existingChat
+        } else {
+            chat = LocalDataManager.shared.createChat(productId: product.id, participant1: currentUserEmail, participant2: publisherEmail)
+        }
+        
+        let detailVC = ChatDetailViewController()
+        detailVC.chatId = chat.id
+        detailVC.otherParticipantEmail = publisherEmail
+        navigationController?.pushViewController(detailVC, animated: true)
     }
     
     @objc private func borrowTapped() {
