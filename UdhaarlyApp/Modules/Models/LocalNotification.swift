@@ -24,7 +24,7 @@ class LocalNotification {
     var createdAt: Date
     
     /// Flag indicating whether the user has viewed this notification.
-    var isRead: Bool
+    var isRead: Bool = false
     
     /// The email address of the user who should receive this notification.
     var recipientEmail: String

@@ -101,6 +101,9 @@ class LocalDataManager {
     
     func saveContext() {
         try? context?.save()
+        // Automatically update the JSON recovery backup after every data change.
+        // The 2-second debounce prevents spamming disk writes for rapid saves.
+        BackupManager.shared.scheduleBackup()
     }
 
     func fetchAllUsers() -> [LocalUser] {
@@ -371,14 +374,16 @@ class LocalDataManager {
     /// - Parameters:
     ///   - chatId: Link to the `LocalChat` model this message is for.
     ///   - senderEmail: The current logged user's email sending the text.
-    ///   - content: The actual text being sent.
-    func sendMessage(chatId: UUID, senderEmail: String, content: String) {
-        let message = LocalMessage(chatId: chatId, senderEmail: senderEmail, content: content)
+    ///   - content: The actual text being sent. Empty string for photo-only messages.
+    ///   - imageData: Optional JPEG data for photo messages. Nil for text-only messages.
+    func sendMessage(chatId: UUID, senderEmail: String, content: String, imageData: Data? = nil) {
+        let message = LocalMessage(chatId: chatId, senderEmail: senderEmail, content: content, imageData: imageData)
         context?.insert(message)
         
         let descriptor = FetchDescriptor<LocalChat>(predicate: #Predicate { $0.id == chatId })
         if let chat = (try? context?.fetch(descriptor))?.first {
-            chat.lastMessage = content
+            // Show a photo placeholder in the inbox preview if it's a photo-only message
+            chat.lastMessage = imageData != nil && content.isEmpty ? "📸 Photo" : content
             chat.lastUpdated = Date()
         }
         
@@ -395,5 +400,35 @@ class LocalDataManager {
         return (try? context?.fetch(descriptor)) ?? []
     }
     
+    // MARK: - Read Receipt Logic
+    
+    /// Marks all messages NOT sent by `recipientEmail` across all their chats as "delivered".
+    /// Called when the recipient opens the Chats inbox — simulating delivery confirmation.
+    /// - Parameter recipientEmail: The logged-in user who just opened their inbox.
+    func markMessagesAsDelivered(for recipientEmail: String) {
+        let chats = fetchChats(forEmail: recipientEmail)
+        for chat in chats {
+            let messages = fetchMessages(forChatId: chat.id)
+            for message in messages where message.senderEmail != recipientEmail && !message.isDelivered {
+                message.isDelivered = true
+            }
+        }
+        saveContext()
+    }
+    
+    /// Marks all messages NOT sent by `recipientEmail` in a specific chat as both delivered and read.
+    /// Called when the recipient opens a specific chat — simulating the read confirmation.
+    /// - Parameters:
+    ///   - chatId: The chat the user just opened.
+    ///   - recipientEmail: The logged-in user who just opened the chat.
+    func markMessagesAsRead(chatId: UUID, recipientEmail: String) {
+        let messages = fetchMessages(forChatId: chatId)
+        for message in messages where message.senderEmail != recipientEmail {
+            if !message.isDelivered { message.isDelivered = true }
+            if !message.isRead { message.isRead = true }
+        }
+        saveContext()
+    }
+
 }
 

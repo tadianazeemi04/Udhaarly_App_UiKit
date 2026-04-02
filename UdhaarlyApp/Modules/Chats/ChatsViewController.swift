@@ -53,6 +53,8 @@ class ChatsViewController: UIViewController {
     /// Queries the LocalDataManager for all active chat threads that the current user is a part of.
     private func fetchChats() {
         guard let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") else { return }
+        // Simulate delivery: the current user opening their inbox means messages sent TO them are now delivered.
+        LocalDataManager.shared.markMessagesAsDelivered(for: currentEmail)
         self.chats = LocalDataManager.shared.fetchChats(forEmail: currentEmail)
         tableView.reloadData()
     }

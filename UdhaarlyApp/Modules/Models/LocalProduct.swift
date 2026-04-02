@@ -22,7 +22,7 @@ class LocalProduct {
     // Store images as Data (Binary) for local persistence
     @Attribute(.externalStorage) var coverImage: Data? // the buyer promotion image
     var galleryImages: [Data]
-    var isPremium: Bool
+    var isPremium: Bool = false
     var isFavorite: Bool = false
     var createdAt: Date
     var publisherEmail: String?

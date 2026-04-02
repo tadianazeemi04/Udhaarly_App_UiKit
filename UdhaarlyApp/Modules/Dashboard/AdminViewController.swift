@@ -12,7 +12,8 @@ class AdminViewController: UIViewController {
     // MARK: - Properties
     private var users: [LocalUser] = []
     private var products: [LocalProduct] = []
-    private var isShowingUsers = true
+    /// 0 = Users, 1 = Products, 2 = Backup
+    private var currentSegment = 0
 
     // MARK: - UI Components
     private let headerView: GradientView = {
@@ -32,7 +33,7 @@ class AdminViewController: UIViewController {
     }()
 
     private let segmentedControl: UISegmentedControl = {
-        let sc = UISegmentedControl(items: ["Users", "Products"])
+        let sc = UISegmentedControl(items: ["Users", "Products", "Backup"])
         sc.selectedSegmentIndex = 0
         sc.selectedSegmentTintColor = .white
         sc.setTitleTextAttributes([.foregroundColor: UIColor.black], for: .selected)
@@ -54,6 +55,92 @@ class AdminViewController: UIViewController {
         return tv
     }()
 
+    /// Full-screen backup panel shown when the Backup segment is selected.
+    private lazy var backupPanelView: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor(hex: "#FAFAFA")
+        v.isHidden = true
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let backupStatusCard: UIView = {
+        let v = UIView()
+        v.backgroundColor = .white
+        v.layer.cornerRadius = 16
+        v.layer.shadowColor = UIColor.black.cgColor
+        v.layer.shadowOpacity = 0.08
+        v.layer.shadowOffset = CGSize(width: 0, height: 3)
+        v.layer.shadowRadius = 8
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let backupIconLabel: UILabel = {
+        let l = UILabel()
+        l.text = "🛡️"
+        l.font = .systemFont(ofSize: 44)
+        l.textAlignment = .center
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let backupTitleLabel: UILabel = {
+        let l = UILabel()
+        l.text = "Recovery Backup"
+        l.font = .systemFont(ofSize: 20, weight: .bold)
+        l.textAlignment = .center
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let backupDateLabel: UILabel = {
+        let l = UILabel()
+        l.text = "No backup found"
+        l.font = .systemFont(ofSize: 14)
+        l.textColor = .secondaryLabel
+        l.textAlignment = .center
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let backupStatsLabel: UILabel = {
+        let l = UILabel()
+        l.text = ""
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .secondaryLabel
+        l.textAlignment = .center
+        l.numberOfLines = 2
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private lazy var restoreButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("🔄  Restore All Data", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        btn.setTitleColor(.white, for: .normal)
+        btn.backgroundColor = .brandOrange
+        btn.layer.cornerRadius = 14
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.addTarget(self, action: #selector(didTapRestore), for: .touchUpInside)
+        return btn
+    }()
+
+    private lazy var backupNowButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("💾  Backup Now", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        btn.setTitleColor(.brandOrange, for: .normal)
+        btn.backgroundColor = .white
+        btn.layer.cornerRadius = 14
+        btn.layer.borderWidth = 1.5
+        btn.layer.borderColor = UIColor.brandOrange.cgColor
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.addTarget(self, action: #selector(didTapBackupNow), for: .touchUpInside)
+        return btn
+    }()
+
     private let backButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setImage(UIImage(systemName: "arrow.left"), for: .normal)
@@ -71,12 +158,22 @@ class AdminViewController: UIViewController {
 
     private func setupUI() {
         view.backgroundColor = .white
-        
+
         view.addSubview(headerView)
         headerView.addSubview(titleLabel)
         headerView.addSubview(segmentedControl)
         headerView.addSubview(backButton)
         view.addSubview(tableView)
+        view.addSubview(backupPanelView)
+
+        // Backup panel subviews
+        backupPanelView.addSubview(backupStatusCard)
+        backupStatusCard.addSubview(backupIconLabel)
+        backupStatusCard.addSubview(backupTitleLabel)
+        backupStatusCard.addSubview(backupDateLabel)
+        backupStatusCard.addSubview(backupStatsLabel)
+        backupPanelView.addSubview(restoreButton)
+        backupPanelView.addSubview(backupNowButton)
 
         NSLayoutConstraint.activate([
             headerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -91,14 +188,50 @@ class AdminViewController: UIViewController {
             titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
 
             segmentedControl.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 15),
-            segmentedControl.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 40),
-            segmentedControl.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -40),
+            segmentedControl.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            segmentedControl.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
             segmentedControl.heightAnchor.constraint(equalToConstant: 35),
 
             tableView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            backupPanelView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+            backupPanelView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backupPanelView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backupPanelView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            backupStatusCard.topAnchor.constraint(equalTo: backupPanelView.topAnchor, constant: 30),
+            backupStatusCard.leadingAnchor.constraint(equalTo: backupPanelView.leadingAnchor, constant: 20),
+            backupStatusCard.trailingAnchor.constraint(equalTo: backupPanelView.trailingAnchor, constant: -20),
+
+            backupIconLabel.topAnchor.constraint(equalTo: backupStatusCard.topAnchor, constant: 24),
+            backupIconLabel.centerXAnchor.constraint(equalTo: backupStatusCard.centerXAnchor),
+
+            backupTitleLabel.topAnchor.constraint(equalTo: backupIconLabel.bottomAnchor, constant: 12),
+            backupTitleLabel.centerXAnchor.constraint(equalTo: backupStatusCard.centerXAnchor),
+
+            backupDateLabel.topAnchor.constraint(equalTo: backupTitleLabel.bottomAnchor, constant: 8),
+            backupDateLabel.centerXAnchor.constraint(equalTo: backupStatusCard.centerXAnchor),
+            backupDateLabel.leadingAnchor.constraint(equalTo: backupStatusCard.leadingAnchor, constant: 16),
+            backupDateLabel.trailingAnchor.constraint(equalTo: backupStatusCard.trailingAnchor, constant: -16),
+
+            backupStatsLabel.topAnchor.constraint(equalTo: backupDateLabel.bottomAnchor, constant: 6),
+            backupStatsLabel.centerXAnchor.constraint(equalTo: backupStatusCard.centerXAnchor),
+            backupStatsLabel.leadingAnchor.constraint(equalTo: backupStatusCard.leadingAnchor, constant: 16),
+            backupStatsLabel.trailingAnchor.constraint(equalTo: backupStatusCard.trailingAnchor, constant: -16),
+            backupStatsLabel.bottomAnchor.constraint(equalTo: backupStatusCard.bottomAnchor, constant: -24),
+
+            restoreButton.topAnchor.constraint(equalTo: backupStatusCard.bottomAnchor, constant: 28),
+            restoreButton.leadingAnchor.constraint(equalTo: backupPanelView.leadingAnchor, constant: 20),
+            restoreButton.trailingAnchor.constraint(equalTo: backupPanelView.trailingAnchor, constant: -20),
+            restoreButton.heightAnchor.constraint(equalToConstant: 54),
+
+            backupNowButton.topAnchor.constraint(equalTo: restoreButton.bottomAnchor, constant: 14),
+            backupNowButton.leadingAnchor.constraint(equalTo: restoreButton.leadingAnchor),
+            backupNowButton.trailingAnchor.constraint(equalTo: restoreButton.trailingAnchor),
+            backupNowButton.heightAnchor.constraint(equalToConstant: 54),
         ])
 
         segmentedControl.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
@@ -111,13 +244,77 @@ class AdminViewController: UIViewController {
         tableView.reloadData()
     }
 
+    private func refreshBackupPanel() {
+        guard let backup = BackupManager.shared.loadBackup() else {
+            backupDateLabel.text = "No backup found yet"
+            backupStatsLabel.text = "Use 'Backup Now' to create your first snapshot."
+            restoreButton.isEnabled = false
+            restoreButton.alpha = 0.4
+            return
+        }
+        restoreButton.isEnabled = true
+        restoreButton.alpha = 1.0
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        backupDateLabel.text = "Last backup: \(formatter.string(from: backup.backupDate))"
+        backupStatsLabel.text = "👥 \(backup.users.count) users  |  📦 \(backup.products.count) products"
+    }
+
     @objc private func segmentChanged() {
-        isShowingUsers = segmentedControl.selectedSegmentIndex == 0
-        tableView.reloadData()
+        currentSegment = segmentedControl.selectedSegmentIndex
+        let isBackup = currentSegment == 2
+        tableView.isHidden = isBackup
+        backupPanelView.isHidden = !isBackup
+        if isBackup {
+            refreshBackupPanel()
+        } else {
+            tableView.reloadData()
+        }
+    }
+
+    @objc private func didTapRestore() {
+        let confirm = UIAlertController(
+            title: "Restore All Data?",
+            message: "This will re-import all users and products from the backup. Existing records will not be duplicated.",
+            preferredStyle: .alert
+        )
+        confirm.addAction(UIAlertAction(title: "Restore", style: .destructive) { [weak self] _ in
+            self?.performRestore()
+        })
+        confirm.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(confirm, animated: true)
+    }
+
+    private func performRestore() {
+        let result = BackupManager.shared.restoreFromBackup()
+        fetchData()
+        let message = "✅ Restored \(result.restoredUsers) users and \(result.restoredProducts) products successfully."
+        let alert = UIAlertController(title: "Restore Complete", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+        refreshBackupPanel()
+    }
+
+    @objc private func didTapBackupNow() {
+        backupNowButton.setTitle("Saving...", for: .normal)
+        backupNowButton.isEnabled = false
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            BackupManager.shared.createBackup()
+            DispatchQueue.main.async {
+                self?.backupNowButton.setTitle("💾  Backup Now", for: .normal)
+                self?.backupNowButton.isEnabled = true
+                self?.refreshBackupPanel()
+                let alert = UIAlertController(title: "Backup Saved", message: "Your data has been backed up to the recovery file.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(alert, animated: true)
+            }
+        }
     }
 
     @objc private func didTapBack() {
-        // Logout admin and go back
         UserDefaults.standard.set(false, forKey: "isUserLoggedIn")
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first {
@@ -131,11 +328,11 @@ class AdminViewController: UIViewController {
 
 extension AdminViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return isShowingUsers ? users.count : products.count
+        return currentSegment == 0 ? users.count : products.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        if isShowingUsers {
+        if currentSegment == 0 {
             let cell = tableView.dequeueReusableCell(withIdentifier: "UserCell", for: indexPath) as! AdminUserCell
             cell.configure(with: users[indexPath.row])
             return cell
@@ -147,7 +344,7 @@ extension AdminViewController: UITableViewDelegate, UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return isShowingUsers ? 90 : 100
+        return currentSegment == 0 ? 90 : 100
     }
 }
 
@@ -192,7 +389,7 @@ class AdminUserCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         backgroundColor = .clear
-        
+
         contentView.addSubview(container)
         container.addSubview(emailLabel)
         container.addSubview(passwordLabel)
@@ -264,7 +461,7 @@ class AdminProductCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         backgroundColor = .clear
-        
+
         contentView.addSubview(container)
         container.addSubview(titleLabel)
         container.addSubview(priceLabel)
