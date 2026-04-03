@@ -9,4 +9,8 @@ import UIKit
 
 extension UIColor {
     static let brandOrange = UIColor(red: 0.95, green: 0.42, blue: 0.21, alpha: 1.0)
+    static let chatPeach = UIColor(hex: "#FFF9F6")
+    static let incomingBubble = UIColor(hex: "#FFEADC")
+    static let indicatorGreen = UIColor(hex: "#34C759")
+    static let dateHeaderPeach = UIColor(hex: "#FFEDDF")
 }

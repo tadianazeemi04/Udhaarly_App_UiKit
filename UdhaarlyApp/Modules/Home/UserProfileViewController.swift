@@ -128,8 +128,11 @@ class UserProfileViewController: UIViewController {
         tableView.showsVerticalScrollIndicator = false
         tableView.sectionHeaderHeight = 5
         tableView.sectionFooterHeight = 5
+        if #available(iOS 15.0, *) {
+            tableView.sectionHeaderTopPadding = 0
+        }
         
-        let headerHeight: CGFloat = 160
+        let headerHeight: CGFloat = 110
         let headerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: headerHeight))
         
         // Add a soft gradient background to header

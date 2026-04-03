@@ -5,6 +5,10 @@
 
 import UIKit
 
+protocol MessageCellDelegate: AnyObject {
+    func messageCell(_ cell: MessageCell, didTapImage image: UIImage)
+}
+
 class MessageCell: UITableViewCell {
 
     static let identifier = "MessageCell"
@@ -13,7 +17,7 @@ class MessageCell: UITableViewCell {
 
     private let bubbleView: UIView = {
         let view = UIView()
-        view.layer.cornerRadius = 16
+        view.layer.cornerRadius = 20
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
@@ -55,6 +59,8 @@ class MessageCell: UITableViewCell {
         return label
     }()
 
+    weak var delegate: MessageCellDelegate?
+
     // MARK: - Layout Constraints
 
     private var leadingConstraint: NSLayoutConstraint!
@@ -79,8 +85,8 @@ class MessageCell: UITableViewCell {
 
         // Bubble alignment
         leadingConstraint = bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
-        // Extra right margin on outgoing bubbles reserves space so ✓✓ ticks beside the time label don't clip
-        trailingConstraint = bubbleView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40)
+        // Standard margin for outgoing bubbles
+        trailingConstraint = bubbleView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
 
         // Time label alignment mirrors bubble
         timeLeadingConstraint = timeLabel.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor)
@@ -108,14 +114,35 @@ class MessageCell: UITableViewCell {
             bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             bubbleView.bottomAnchor.constraint(equalTo: timeLabel.topAnchor, constant: -4),
             bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.75),
-            // Time and receipt share the same bottom row
+            
+            // Shared bottom alignment for time and receipt
             timeLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-            // Receipt sits to the right of the time label with a small gap
             receiptLabel.centerYAnchor.constraint(equalTo: timeLabel.centerYAnchor),
-            receiptLabel.leadingAnchor.constraint(equalTo: timeLabel.trailingAnchor, constant: 3),
-            // Hard stop: never let receipt label clip past the screen edge
-            receiptLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -8),
+            
+            // Positioning for outgoing messages: [Time] [Ticks] (Aligned to bubble right)
+            receiptLabel.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor),
+            timeLabel.trailingAnchor.constraint(equalTo: receiptLabel.leadingAnchor, constant: -4),
+            
+            // Positioning for incoming messages: [Time] (Aligned to bubble left)
+            timeLabel.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor),
         ])
+        
+        // Deactivate the dynamic time constraints we setup earlier as we're using a more static approach now
+        timeLeadingConstraint.isActive = false
+        timeTrailingConstraint.isActive = false
+
+        setupGestures()
+    }
+
+    private func setupGestures() {
+        photoImageView.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handlePhotoTap))
+        photoImageView.addGestureRecognizer(tap)
+    }
+
+    @objc private func handlePhotoTap() {
+        guard let image = photoImageView.image else { return }
+        delegate?.messageCell(self, didTapImage: image)
     }
 
     required init?(coder: NSCoder) {
@@ -132,17 +159,16 @@ class MessageCell: UITableViewCell {
         formatter.timeStyle = .short
         timeLabel.text = formatter.string(from: message.timestamp)
 
-        // Determine alignment
+        // Determine alignment and apply bubble "tails"
+        // Determine alignment and apply bubble "tails"
         if isCurrentUser {
             leadingConstraint.isActive = false
             trailingConstraint.isActive = true
-            timeLeadingConstraint.isActive = false
-            timeTrailingConstraint.isActive = true
+            bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMinYCorner]
         } else {
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
-            timeTrailingConstraint.isActive = false
-            timeLeadingConstraint.isActive = true
+            bubbleView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner]
         }
 
         // Photo message
@@ -154,6 +180,13 @@ class MessageCell: UITableViewCell {
 
             NSLayoutConstraint.deactivate(textPaddingConstraints)
             NSLayoutConstraint.activate(imageSizeConstraints)
+            
+            if isCurrentUser {
+                bubbleView.layer.borderWidth = 4
+                bubbleView.layer.borderColor = UIColor(hex: "#FF8C42").cgColor
+            } else {
+                bubbleView.layer.borderWidth = 0
+            }
         } else {
             // Text message
             photoImageView.isHidden = true
@@ -164,17 +197,21 @@ class MessageCell: UITableViewCell {
             NSLayoutConstraint.activate(textPaddingConstraints)
 
             if isCurrentUser {
-                bubbleView.backgroundColor = .brandOrange
+                bubbleView.backgroundColor = UIColor(hex: "#FF8C42") // Vibrant Orange
                 messageLabel.textColor = .white
+                bubbleView.layer.borderWidth = 0
             } else {
-                bubbleView.backgroundColor = UIColor(white: 0.9, alpha: 1.0)
-                messageLabel.textColor = .black
+                bubbleView.backgroundColor = .incomingBubble
+                messageLabel.textColor = UIColor(hex: "#5A3E2B") // Dark Brown
+                bubbleView.layer.borderWidth = 0
             }
         }
 
         // Read receipt ticks — only shown on outgoing (sender's) messages
         if isCurrentUser {
             receiptLabel.isHidden = false
+            // Ensure time label is pinned to the left of the receipt
+            timeLabel.isHidden = false 
             if message.isRead {
                 // Double tick in brand orange — other user has read the message
                 receiptLabel.text = "✓✓"

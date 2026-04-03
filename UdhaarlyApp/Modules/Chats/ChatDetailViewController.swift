@@ -14,6 +14,8 @@ class ChatDetailViewController: UIViewController {
     var chatId: UUID?
     /// Set to the opposing user's email to display in the central navigation bar.
     var otherParticipantEmail: String = ""
+    /// The user object for the other participant, used to fetch their name and profile.
+    private var otherUser: LocalUser?
     
     // MARK: - Data
     
@@ -36,12 +38,12 @@ class ChatDetailViewController: UIViewController {
 
     /// The main scrolling display for chat bubbles.
     private lazy var tableView: UITableView = {
-        let tv = UITableView()
+        let tv = UITableView(frame: .zero, style: .plain)
         tv.delegate = self
         tv.dataSource = self
         tv.register(MessageCell.self, forCellReuseIdentifier: MessageCell.identifier)
         tv.separatorStyle = .none
-        tv.backgroundColor = .white
+        tv.backgroundColor = .chatPeach
         tv.translatesAutoresizingMaskIntoConstraints = false
         // Interactively dismiss the keyboard if the user swipes down on the table view.
         tv.keyboardDismissMode = .interactive
@@ -55,39 +57,57 @@ class ChatDetailViewController: UIViewController {
     /// The bottom container holding the input view and send button.
     private let messageInputContainerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemGray6
+        view.backgroundColor = .white
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: -1)
+        view.layer.shadowOpacity = 0.05
+        view.layer.shadowRadius = 4
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
 
-    private let messageTextField: UITextField = {
+    private let inputContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(hex: "#F8F9FA")
+        view.layer.cornerRadius = 10
+        view.layer.borderWidth = 1
+        view.layer.borderColor = UIColor.systemGray5.cgColor
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private lazy var messageTextField: UITextField = {
         let tf = UITextField()
-        tf.placeholder = "Type a message..."
-        tf.borderStyle = .roundedRect
-        tf.backgroundColor = .white
+        tf.placeholder = "Write your message..."
+        tf.borderStyle = .none
+        tf.font = .systemFont(ofSize: 15)
+        tf.backgroundColor = .clear
+        tf.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         tf.translatesAutoresizingMaskIntoConstraints = false
         return tf
     }()
 
-    private lazy var sendButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "paperplane.fill"), for: .normal)
-        button.tintColor = .brandOrange
-        button.addTarget(self, action: #selector(handleSend), for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-
-    /// Camera/photo button so the user can attach an image from their library or camera.
     private lazy var photoButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "camera.fill"), for: .normal)
-        button.tintColor = .brandOrange
+        button.setImage(UIImage(systemName: "photo"), for: .normal)
+        button.tintColor = .systemGray3
         button.addTarget(self, action: #selector(handlePhotoAttach), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
 
+    private lazy var actionButton: UIButton = {
+        let button = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        button.setImage(UIImage(systemName: "paperplane.fill", withConfiguration: config), for: .normal)
+        button.tintColor = .white
+        button.backgroundColor = .brandOrange
+        button.layer.cornerRadius = 22
+        button.addTarget(self, action: #selector(handleSend), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
     /// We keep a reference to this layout constraint so we can push it up when the keyboard appears.
     private var bottomConstraint: NSLayoutConstraint!
 
@@ -96,8 +116,16 @@ class ChatDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        title = otherParticipantEmail
+        
+        // Fetch user details to show name instead of email
+        otherUser = LocalDataManager.shared.fetchUser(email: otherParticipantEmail)
+        if let user = otherUser {
+            title = "\(user.firstName) \(user.lastName)"
+        } else {
+            title = otherParticipantEmail
+        }
 
+        setupNavigationBar()
         setupLayout()
         fetchMessages()
 
@@ -116,16 +144,150 @@ class ChatDetailViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
+    // MARK: - Navigation Setup
+    
+    private func setupNavigationBar() {
+        // Custom Title View
+        let titleContainer = UIView()
+        titleContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        let profileImageView = UIImageView()
+        profileImageView.contentMode = .scaleAspectFill
+        profileImageView.clipsToBounds = true
+        profileImageView.layer.cornerRadius = 18
+        profileImageView.backgroundColor = .systemGray5
+        profileImageView.translatesAutoresizingMaskIntoConstraints = false
+        if let user = otherUser, let data = user.profileImageData {
+            profileImageView.image = UIImage(data: data)
+        } else {
+            profileImageView.image = UIImage(systemName: "person.circle.fill")
+            profileImageView.tintColor = .systemGray3
+        }
+
+        let statusDot = UIView()
+        statusDot.backgroundColor = .indicatorGreen
+        statusDot.layer.cornerRadius = 5
+        statusDot.layer.borderWidth = 1.5
+        statusDot.layer.borderColor = UIColor.white.cgColor
+        statusDot.translatesAutoresizingMaskIntoConstraints = false
+
+        let nameLabel = UILabel()
+        nameLabel.text = otherUser != nil ? "\(otherUser!.firstName) \(otherUser!.lastName)" : otherParticipantEmail
+        nameLabel.font = .systemFont(ofSize: 16, weight: .bold)
+        nameLabel.textColor = UIColor(hex: "#4A2E19")
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let statusLabel = UILabel()
+        statusLabel.text = "• Online now"
+        statusLabel.font = .systemFont(ofSize: 12)
+        statusLabel.textColor = .indicatorGreen
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        let labelStack = UIStackView(arrangedSubviews: [nameLabel, statusLabel])
+        labelStack.axis = .vertical
+        labelStack.spacing = 0
+        labelStack.translatesAutoresizingMaskIntoConstraints = false
+
+        titleContainer.addSubview(profileImageView)
+        titleContainer.addSubview(statusDot)
+        titleContainer.addSubview(labelStack)
+
+        NSLayoutConstraint.activate([
+            profileImageView.leadingAnchor.constraint(equalTo: titleContainer.leadingAnchor),
+            profileImageView.centerYAnchor.constraint(equalTo: titleContainer.centerYAnchor),
+            profileImageView.widthAnchor.constraint(equalToConstant: 36),
+            profileImageView.heightAnchor.constraint(equalToConstant: 36),
+
+            statusDot.trailingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 2),
+            statusDot.bottomAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: -2),
+            statusDot.widthAnchor.constraint(equalToConstant: 10),
+            statusDot.heightAnchor.constraint(equalToConstant: 10),
+
+            labelStack.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 10),
+            labelStack.centerYAnchor.constraint(equalTo: titleContainer.centerYAnchor),
+            labelStack.trailingAnchor.constraint(equalTo: titleContainer.trailingAnchor),
+            
+            // Add explicit size to ensure tap area is non-zero
+            titleContainer.heightAnchor.constraint(equalToConstant: 44),
+            titleContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 150)
+        ])
+
+        // Profile Navigation: Make titleContainer interactive
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleViewProfile))
+        titleContainer.isUserInteractionEnabled = true
+        titleContainer.addGestureRecognizer(tap)
+
+        navigationItem.titleView = titleContainer
+
+        // Right Bar Button: Just the phone icon
+        let phoneButton = UIBarButtonItem(
+            image: UIImage(systemName: "phone.fill"),
+            style: .plain,
+            target: self,
+            action: #selector(handleCallUser)
+        )
+        
+        phoneButton.tintColor = UIColor(hex: "#4A2E19")
+        navigationItem.rightBarButtonItem = phoneButton
+        
+        // Left Bar Button (Back)
+        let backButton = UIButton(type: .system)
+        backButton.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        backButton.tintColor = UIColor(hex: "#4A2E19")
+        backButton.backgroundColor = .white
+        backButton.layer.cornerRadius = 20
+        backButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        backButton.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        
+        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: backButton)
+    }
+
+    @objc private func handleCallUser() {
+        guard let phoneNumber = otherUser?.phoneNumber, !phoneNumber.isEmpty else {
+            showUnavailableAlert(message: "This user hasn't provided a phone number.")
+            return
+        }
+        
+        // Clean the phone number (remove spaces, etc.)
+        let cleanNumber = phoneNumber.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        if let url = URL(string: "tel://\(cleanNumber)") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                showUnavailableAlert(message: "Your device cannot make phone calls.")
+            }
+        }
+    }
+
+    @objc private func handleBack() {
+        navigationController?.popViewController(animated: true)
+    }
+
+    @objc private func handleViewProfile() {
+        guard let user = otherUser else {
+            // If user not found, try fetching again just in case
+            if let fetchedUser = LocalDataManager.shared.fetchUser(email: otherParticipantEmail) {
+                let vc = UserProfileViewController(user: fetchedUser)
+                navigationController?.pushViewController(vc, animated: true)
+            }
+            return
+        }
+        let vc = UserProfileViewController(user: user)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
     // MARK: - Layout Setup
     
     private func setupLayout() {
         view.addSubview(tableView)
         view.addSubview(messageInputContainerView)
-        messageInputContainerView.addSubview(photoButton)
-        messageInputContainerView.addSubview(messageTextField)
-        messageInputContainerView.addSubview(sendButton)
+        
+        messageInputContainerView.addSubview(inputContainer)
+        inputContainer.addSubview(messageTextField)
+        inputContainer.addSubview(photoButton)
+        messageInputContainerView.addSubview(actionButton)
 
-        // Pins the input view to the bottom safe area so it spans properly on devices lacking/having home-bars.
         bottomConstraint = messageInputContainerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 
         NSLayoutConstraint.activate([
@@ -137,27 +299,39 @@ class ChatDetailViewController: UIViewController {
             messageInputContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             messageInputContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomConstraint,
-            messageInputContainerView.heightAnchor.constraint(equalToConstant: 60),
+            messageInputContainerView.heightAnchor.constraint(equalToConstant: 70),
 
-            // Camera button on the far left
-            photoButton.leadingAnchor.constraint(equalTo: messageInputContainerView.leadingAnchor, constant: 12),
-            photoButton.centerYAnchor.constraint(equalTo: messageInputContainerView.centerYAnchor),
-            photoButton.widthAnchor.constraint(equalToConstant: 32),
-            photoButton.heightAnchor.constraint(equalToConstant: 32),
+            // Input container (grey box)
+            inputContainer.leadingAnchor.constraint(equalTo: messageInputContainerView.leadingAnchor, constant: 16),
+            inputContainer.centerYAnchor.constraint(equalTo: messageInputContainerView.centerYAnchor),
+            inputContainer.trailingAnchor.constraint(equalTo: actionButton.leadingAnchor, constant: -12),
+            inputContainer.heightAnchor.constraint(equalToConstant: 44),
 
-            // Text field grows between camera and send buttons
-            messageTextField.leadingAnchor.constraint(equalTo: photoButton.trailingAnchor, constant: 8),
-            messageTextField.centerYAnchor.constraint(equalTo: messageInputContainerView.centerYAnchor),
-            messageTextField.trailingAnchor.constraint(equalTo: sendButton.leadingAnchor, constant: -8),
+            // Text field inside container
+            messageTextField.leadingAnchor.constraint(equalTo: inputContainer.leadingAnchor, constant: 12),
+            messageTextField.trailingAnchor.constraint(equalTo: photoButton.leadingAnchor, constant: -8),
+            messageTextField.centerYAnchor.constraint(equalTo: inputContainer.centerYAnchor),
 
-            sendButton.trailingAnchor.constraint(equalTo: messageInputContainerView.trailingAnchor, constant: -16),
-            sendButton.centerYAnchor.constraint(equalTo: messageInputContainerView.centerYAnchor),
-            sendButton.widthAnchor.constraint(equalToConstant: 40),
-            sendButton.heightAnchor.constraint(equalToConstant: 40)
+            // Photo button inside container on the right
+            photoButton.trailingAnchor.constraint(equalTo: inputContainer.trailingAnchor, constant: -12),
+            photoButton.centerYAnchor.constraint(equalTo: inputContainer.centerYAnchor),
+            photoButton.widthAnchor.constraint(equalToConstant: 24),
+            photoButton.heightAnchor.constraint(equalToConstant: 24),
+
+            // Main orange action button
+            actionButton.trailingAnchor.constraint(equalTo: messageInputContainerView.trailingAnchor, constant: -16),
+            actionButton.centerYAnchor.constraint(equalTo: messageInputContainerView.centerYAnchor),
+            actionButton.widthAnchor.constraint(equalToConstant: 44),
+            actionButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
-
+    
     // MARK: - Data Actions
+
+    @objc private func textFieldDidChange() {
+        // No action needed for icon toggle since we removed audio, 
+        // but we could hide/show the button if desired.
+    }
 
     /// Triggered when the send button is tapped, parses input and interacts with the Data Manager.
     @objc private func handleSend() {
@@ -172,6 +346,7 @@ class ChatDetailViewController: UIViewController {
         LocalDataManager.shared.sendMessage(chatId: id, senderEmail: currentEmail, content: text)
         // Reset the textview since operation succeeded
         messageTextField.text = ""
+        textFieldDidChange()
         fetchMessages()
     }
 
@@ -390,28 +565,28 @@ extension ChatDetailViewController: UITableViewDelegate, UITableViewDataSource {
         let message = groupedMessages[indexPath.section].messages[indexPath.row]
         let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") ?? ""
         cell.configure(with: message, currentEmail: currentEmail)
+        cell.delegate = self
         return cell
     }
 
     /// Renders the sticky "Today / Yesterday / Apr 1, 2026" date divider between message groups.
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let label = groupedMessages[section].dateLabel
+        let label = groupedMessages[section].dateLabel.uppercased()
 
-        // Use white (matching chat background) so the sticky floating header
-        // doesn't turn dark gray as UITableView applies its default header tint while scrolling.
+        // Use custom peach background
         let containerView = UIView()
-        containerView.backgroundColor = .white
+        containerView.backgroundColor = .chatPeach
 
         let capsule = UILabel()
-        capsule.font = .systemFont(ofSize: 12, weight: .medium)
-        capsule.textColor = .secondaryLabel
-        capsule.backgroundColor = UIColor.systemGray5
+        capsule.font = .systemFont(ofSize: 11, weight: .bold)
+        capsule.textColor = .brandOrange
+        capsule.backgroundColor = .dateHeaderPeach
         capsule.textAlignment = .center
         capsule.clipsToBounds = true
-        capsule.layer.cornerRadius = 10
+        capsule.layer.cornerRadius = 6
         capsule.translatesAutoresizingMaskIntoConstraints = false
         // Horizontal padding via leading/trailing spaces
-        capsule.text = "  \(label)  "
+        capsule.text = "   \(label)   "
 
         containerView.addSubview(capsule)
         NSLayoutConstraint.activate([
@@ -453,5 +628,14 @@ extension ChatDetailViewController: UIImagePickerControllerDelegate, UINavigatio
 
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true)
+    }
+}
+
+// MARK: - MessageCellDelegate
+
+extension ChatDetailViewController: MessageCellDelegate {
+    func messageCell(_ cell: MessageCell, didTapImage image: UIImage) {
+        let vc = FullscreenImageViewController(image: image)
+        present(vc, animated: true)
     }
 }
