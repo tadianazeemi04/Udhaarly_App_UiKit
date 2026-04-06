@@ -9,6 +9,7 @@ class RequestCardView: UIView {
     var onDelay: (() -> Void)?
     var onConfirmReturn: (() -> Void)?
     var onViewReturnDetails: (() -> Void)?
+    var onRateUser: (() -> Void)?
     
     private let profileImageView = UIImageView()
     private let nameLabel = UILabel()
@@ -167,7 +168,9 @@ class RequestCardView: UIView {
         // --- Setup Buttons Based on Status and Role ---
         actionStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        if request.status == "pending" {
+        let status = request.status
+        
+        if status == "pending" {
             if isLender {
                 let cancelBtn = createButton(title: "Decline", color: "#FF5722", isOutline: true)
                 let chatBtn = createButton(title: "Chat", color: "#FF5722", isOutline: true)
@@ -260,9 +263,14 @@ class RequestCardView: UIView {
                 statusLabel.text = "Status: Delayed"
                 statusLabel.textColor = statusColor
                 availableAgainLabel.isHidden = true
-            } else if request.status == "completed" {
-                statusLabel.text = "Status: Completed (Returned)"
+            } else if status == "completed" {
+                statusLabel.text = "Status: Completed"
                 statusLabel.textColor = .systemGreen
+                
+                let rateBtn = createButton(title: "Rate User", color: "#FF5722", isOutline: true)
+                rateBtn.addTarget(self, action: #selector(rateTapped), for: .touchUpInside)
+                actionStack.addArrangedSubview(rateBtn)
+                
                 availableAgainLabel.isHidden = true
             } else {
                 availableAgainLabel.isHidden = true
@@ -277,6 +285,7 @@ class RequestCardView: UIView {
     @objc private func delayTapped() { onDelay?() }
     @objc private func confirmReturnTapped() { onConfirmReturn?() }
     @objc private func viewDetailsTapped() { onViewReturnDetails?() }
+    @objc private func rateTapped() { onRateUser?() }
     
     private func createButton(title: String, color: String, isOutline: Bool) -> UIButton {
         let btn = UIButton(type: .system)

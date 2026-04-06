@@ -197,6 +197,9 @@ class RequestsViewController: UIViewController {
             card.onDelay = { [weak self] in
                 self?.presentActionVC(mode: .reportDelay, request: request)
             }
+            card.onRateUser = { [weak self] in
+                self?.presentReviewInput(request: request, isLender: false)
+            }
             stackView.addArrangedSubview(card)
         }
     }
@@ -242,6 +245,9 @@ class RequestsViewController: UIViewController {
             card.onViewReturnDetails = { [weak self] in
                 self?.handleViewReturnDetails(request: request)
             }
+            card.onRateUser = { [weak self] in
+                self?.presentReviewInput(request: request, isLender: true)
+            }
             stackView.addArrangedSubview(card)
         }
     }
@@ -253,8 +259,24 @@ class RequestsViewController: UIViewController {
             LocalDataManager.shared.updateRequestStatus(request: request, status: "completed")
             self?.showLendRequests()
             NotificationCenter.default.post(name: NSNotification.Name("RequestsUpdated"), object: nil)
+            
+            // Prompt Lender to rate Borrower
+            self?.presentReviewInput(request: request, isLender: true)
         }))
         present(alert, animated: true)
+    }
+    
+    private func presentReviewInput(request: LocalRequest, isLender: Bool) {
+        let otherUserEmail = isLender ? request.borrowerEmail : request.lenderEmail
+        let otherUser = LocalDataManager.shared.fetchUser(email: otherUserEmail)
+        let otherUserName = otherUser != nil ? "\(otherUser!.firstName) \(otherUser!.lastName)" : "Neighbor"
+        
+        let vc = ReviewInputViewController(revieweeEmail: otherUserEmail, revieweeName: otherUserName)
+        vc.onReviewSubmit = { [weak self] in
+            // Refresh to update UI if needed (though card already handles "completed" state UI)
+            if isLender { self?.showLendRequests() } else { self?.showBorrowRequests() }
+        }
+        present(vc, animated: true)
     }
 
     private func handleViewReturnDetails(request: LocalRequest) {

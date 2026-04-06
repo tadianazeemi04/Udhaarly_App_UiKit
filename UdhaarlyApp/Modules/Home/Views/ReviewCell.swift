@@ -117,10 +117,25 @@ class ReviewCell: UITableViewCell {
     func configure(with review: LocalReview) {
         titleLabel.text = review.title
         bodyLabel.text = review.body
-        reviewerNameLabel.text = review.reviewerName
+        
+        // Fetch real user data if available
+        if let user = LocalDataManager.shared.fetchUser(email: review.reviewerEmail) {
+            reviewerNameLabel.text = "\(user.firstName) \(user.lastName)"
+            if let imageData = user.profileImageData {
+                reviewerImageView.image = UIImage(data: imageData)
+            } else {
+                reviewerImageView.image = UIImage(systemName: "person.circle.fill")
+                reviewerImageView.tintColor = .systemGray3
+            }
+        } else {
+            // Fallback to name stored in review (for dummy data)
+            reviewerNameLabel.text = review.reviewerName
+            reviewerImageView.image = UIImage(systemName: "person.circle.fill")
+            reviewerImageView.tintColor = .systemGray3
+        }
         
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
+        formatter.dateFormat = "dd-MMM-yyyy"
         dateLabel.text = formatter.string(from: review.createdAt)
         
         // Setup Stars

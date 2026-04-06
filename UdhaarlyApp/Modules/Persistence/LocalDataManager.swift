@@ -121,6 +121,11 @@ class LocalDataManager {
         try? context?.save()
     }
     
+    func saveReview(review: LocalReview) {
+        context?.insert(review)
+        saveContext()
+    }
+    
     func deleteProduct(product: LocalProduct) {
         product.isDeleted = true
         try? context?.save()
