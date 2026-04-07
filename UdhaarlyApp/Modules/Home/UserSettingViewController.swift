@@ -256,13 +256,20 @@ class UserSettingViewController: UIViewController {
         guard let email = UserDefaults.standard.string(forKey: "currentUserEmail") else { return }
         let pendingCount = LocalDataManager.shared.fetchPendingRequestsCount(forEmail: email)
         let productCount = LocalDataManager.shared.fetchProducts(forEmail: email).count
+        let reviews = LocalDataManager.shared.fetchReviews(forEmail: email)
+        
+        let reviewCount = reviews.count
+        let avgRating = reviews.isEmpty ? 0 : Double(reviews.reduce(0) { $0 + $1.rating }) / Double(reviews.count)
+        let ratingStr = String(format: "%.1f", avgRating)
         
         let items = [
-            StatItem(value: "4.9", label: "★ Rating"),
+            StatItem(value: ratingStr, label: "★ Rating"),
             StatItem(value: "\(productCount)", label: "Ads"),
             StatItem(value: "\(pendingCount)", label: "Pending Requests"),
-            StatItem(value: "15", label: "Reviews")
+            StatItem(value: "\(reviewCount)", label: "Reviews")
         ]
+        
+        ratingLabel.text = "\(ratingStr) ★"
         
         for (index, item) in items.enumerated() {
             let itemView = StatItemView(value: item.value, label: item.label)
@@ -287,10 +294,15 @@ class UserSettingViewController: UIViewController {
             SettingsRow(icon: "heart", title: "Favorites", iconBg: "#FEF2F2", iconColor: "#FD0000"),
             SettingsRow(icon: "mappin.circle", title: "Saved Addresses", iconBg: "#EFF6FF", iconColor: "#007AFF"),
             SettingsRow(icon: "person.circle", title: "Edit Profile", iconBg: "#F5F3FF", iconColor: "#AD46FF"),
+            SettingsRow(icon: "star.bubble", title: "Reviews", iconBg: "#FEF9C3", iconColor: "#EAB308"),
             SettingsRow(icon: "trash", title: "Deleted Ads", iconBg: "#FFF1F2", iconColor: "#F43F5E"),
             SettingsRow(icon: "crown", title: "Pricing Plans", iconBg: "#FFEDD4", iconColor: "#FF5722")
         ]) { [weak self] title in
-            if title == "Pricing Plans" {
+            if title == "Reviews" {
+                let vc = MyReviewsViewController()
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Pricing Plans" {
                 let vc = SubscriptionViewController()
                 vc.hidesBottomBarWhenPushed = true
                 self?.navigationController?.pushViewController(vc, animated: true)

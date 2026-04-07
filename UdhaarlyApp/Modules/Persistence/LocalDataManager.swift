@@ -77,6 +77,15 @@ class LocalDataManager {
         return (try? context?.fetch(descriptor)) ?? []
     }
     
+    /// Fetches all reviews authored by a specific user.
+    func fetchReviewsBy(email: String) -> [LocalReview] {
+        let descriptor = FetchDescriptor<LocalReview>(
+            predicate: #Predicate { $0.reviewerEmail == email },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
     func fetchDeletedProducts() -> [LocalProduct] {
         let descriptor = FetchDescriptor<LocalProduct>(
             predicate: #Predicate { $0.isDeleted == true },

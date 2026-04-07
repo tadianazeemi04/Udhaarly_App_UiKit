@@ -464,10 +464,18 @@ class ProductDetailViewController: UIViewController {
             } else {
                 profileImageView.image = UIImage(named: "avatar_placeholder")
             }
+            
+            // Real Review Data
+            let reviews = LocalDataManager.shared.fetchReviews(forEmail: email)
+            let reviewCount = reviews.count
+            let avgRating = reviews.isEmpty ? 0 : Double(reviews.reduce(0) { $0 + $1.rating }) / Double(reviews.count)
+            let ratingStr = String(format: "%.1f", avgRating)
+            profileRatingLabel.text = reviews.isEmpty ? "No ratings yet" : "\(ratingStr) ★ (\(reviewCount) reviews)"
         } else {
             // Fallback for products without publisherEmail or if user not found
             profileNameLabel.text = "Udhaarly User"
             profileImageView.image = UIImage(named: "avatar_placeholder")
+            profileRatingLabel.text = "No ratings yet"
         }
         
         // Setup tags
