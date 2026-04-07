@@ -23,6 +23,10 @@ class LocalRequest {
     var returnCondition: String?
     @Attribute(.externalStorage) var returnImage: Data?
     
+    // Review status
+    var isReviewedByBorrower: Bool = false
+    var isReviewedByLender: Bool = false
+    
     // Delay Data
     var delayExtendedTime: String?
     var delayCondition: String?

@@ -12,6 +12,8 @@ class ReviewInputViewController: UIViewController {
     // MARK: - Properties
     var revieweeEmail: String
     var revieweeName: String
+    var requestId: UUID?
+    var isLender: Bool = false
     private var selectedRating: Int = 0
     var onReviewSubmit: (() -> Void)?
 
@@ -97,9 +99,11 @@ class ReviewInputViewController: UIViewController {
     }()
 
     // MARK: - Initializer
-    init(revieweeEmail: String, revieweeName: String) {
+    init(revieweeEmail: String, revieweeName: String, requestId: UUID? = nil, isLender: Bool = false) {
         self.revieweeEmail = revieweeEmail
         self.revieweeName = revieweeName
+        self.requestId = requestId
+        self.isLender = isLender
         super.init(nibName: nil, bundle: nil)
         self.modalPresentationStyle = .overFullScreen
         self.modalTransitionStyle = .crossDissolve
@@ -228,6 +232,11 @@ class ReviewInputViewController: UIViewController {
         )
 
         LocalDataManager.shared.saveReview(review: review)
+        
+        // Mark request as reviewed so the 'Rate' button disappears
+        if let requestId = requestId {
+            LocalDataManager.shared.markRequestAsReviewed(requestId: requestId, isLender: isLender)
+        }
         
         // Show success and dismiss
         let alert = UIAlertController(title: "Success", message: "Thank you for your feedback!", preferredStyle: .alert)

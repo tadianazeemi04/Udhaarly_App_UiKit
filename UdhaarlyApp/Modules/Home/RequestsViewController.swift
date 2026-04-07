@@ -271,7 +271,7 @@ class RequestsViewController: UIViewController {
         let otherUser = LocalDataManager.shared.fetchUser(email: otherUserEmail)
         let otherUserName = otherUser != nil ? "\(otherUser!.firstName) \(otherUser!.lastName)" : "Neighbor"
         
-        let vc = ReviewInputViewController(revieweeEmail: otherUserEmail, revieweeName: otherUserName)
+        let vc = ReviewInputViewController(revieweeEmail: otherUserEmail, revieweeName: otherUserName, requestId: request.id, isLender: isLender)
         vc.onReviewSubmit = { [weak self] in
             // Refresh to update UI if needed (though card already handles "completed" state UI)
             if isLender { self?.showLendRequests() } else { self?.showBorrowRequests() }

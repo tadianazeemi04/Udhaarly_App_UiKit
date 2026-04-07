@@ -267,9 +267,13 @@ class RequestCardView: UIView {
                 statusLabel.text = "Status: Completed"
                 statusLabel.textColor = .systemGreen
                 
-                let rateBtn = createButton(title: "Rate User", color: "#FF5722", isOutline: true)
-                rateBtn.addTarget(self, action: #selector(rateTapped), for: .touchUpInside)
-                actionStack.addArrangedSubview(rateBtn)
+                let alreadyReviewed = isLender ? request.isReviewedByLender : request.isReviewedByBorrower
+                
+                if !alreadyReviewed {
+                    let rateBtn = createButton(title: "Rate User", color: "#FF5722", isOutline: true)
+                    rateBtn.addTarget(self, action: #selector(rateTapped), for: .touchUpInside)
+                    actionStack.addArrangedSubview(rateBtn)
+                }
                 
                 availableAgainLabel.isHidden = true
             } else {

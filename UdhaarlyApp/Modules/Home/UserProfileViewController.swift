@@ -123,6 +123,7 @@ class UserProfileViewController: UIViewController {
         tableView.dataSource = self
         tableView.register(ReviewCell.self, forCellReuseIdentifier: ReviewCell.identifier)
         tableView.register(UserProductsCell.self, forCellReuseIdentifier: UserProductsCell.identifier)
+        tableView.register(EmptyStateCell.self, forCellReuseIdentifier: EmptyStateCell.identifier)
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
         tableView.showsVerticalScrollIndicator = false
@@ -166,9 +167,19 @@ class UserProfileViewController: UIViewController {
             ratingStack.leadingAnchor.constraint(equalTo: ratingLabel.trailingAnchor, constant: 8)
         ])
         
-        // Setup Stars
-        for _ in 1...5 {
-            let iv = UIImageView(image: UIImage(systemName: "star.fill"))
+        // Setup Stars (will be updated in updateRatingUI)
+        updateRatingUI()
+        
+        tableView.tableHeaderView = headerView
+    }
+    
+    private func updateRatingUI() {
+        let avgRating = reviews.isEmpty ? 0 : Double(reviews.reduce(0) { $0 + $1.rating }) / Double(reviews.count)
+        
+        ratingStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for i in 1...5 {
+            let iv = UIImageView()
+            iv.image = UIImage(systemName: Double(i) <= avgRating ? "star.fill" : (Double(i) - 0.5 <= avgRating ? "star.leadinghalf.filled" : "star"))
             iv.tintColor = .systemYellow
             iv.translatesAutoresizingMaskIntoConstraints = false
             iv.widthAnchor.constraint(equalToConstant: 18).isActive = true
@@ -176,7 +187,7 @@ class UserProfileViewController: UIViewController {
             ratingStack.addArrangedSubview(iv)
         }
         
-        tableView.tableHeaderView = headerView
+        ratingLabel.text = reviews.isEmpty ? "No ratings yet" : "Rating "
     }
     
     private func setupLayout() {
@@ -201,6 +212,7 @@ class UserProfileViewController: UIViewController {
     private func fetchData() {
         reviews = LocalDataManager.shared.fetchReviews(forEmail: user.email)
         products = LocalDataManager.shared.fetchProducts(forEmail: user.email)
+        updateRatingUI()
         tableView.reloadData()
     }
 }
@@ -212,7 +224,7 @@ extension UserProfileViewController: UITableViewDelegate, UITableViewDataSource 
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 { return 1 } // Location
-        if section == 1 { return reviews.count } // Reviews
+        if section == 1 { return reviews.isEmpty ? 1 : reviews.count } // Reviews
         return 1 // Products
     }
     
@@ -269,9 +281,15 @@ extension UserProfileViewController: UITableViewDelegate, UITableViewDataSource 
             
             return cell
         } else if indexPath.section == 1 {
-            let cell = tableView.dequeueReusableCell(withIdentifier: ReviewCell.identifier, for: indexPath) as! ReviewCell
-            cell.configure(with: reviews[indexPath.row])
-            return cell
+            if reviews.isEmpty {
+                let cell = tableView.dequeueReusableCell(withIdentifier: EmptyStateCell.identifier, for: indexPath) as! EmptyStateCell
+                cell.configure(with: "No review yet")
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: ReviewCell.identifier, for: indexPath) as! ReviewCell
+                cell.configure(with: reviews[indexPath.row])
+                return cell
+            }
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: UserProductsCell.identifier, for: indexPath) as! UserProductsCell
             cell.configure(with: products)

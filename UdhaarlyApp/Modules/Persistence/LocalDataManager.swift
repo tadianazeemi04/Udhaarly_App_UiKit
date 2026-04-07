@@ -27,6 +27,21 @@ class LocalDataManager {
         }
         /// Clean up orphaned products to maintain database integrity.
         cleanupMissingPublisherProducts()
+        /// Remove legacy dummy reviews to ensure data purity.
+        cleanupDummyReviews()
+    }
+    
+    private func cleanupDummyReviews() {
+        let dummyEmails = ["sana@example.com", "zain@example.com", "ayesha@example.com"]
+        let descriptor = FetchDescriptor<LocalReview>()
+        if let reviews = try? context?.fetch(descriptor) {
+            for review in reviews {
+                if dummyEmails.contains(review.reviewerEmail) {
+                    context?.delete(review)
+                }
+            }
+            try? context?.save()
+        }
     }
     
     func fetchProducts() -> [LocalProduct] {
@@ -59,28 +74,7 @@ class LocalDataManager {
             predicate: #Predicate { $0.revieweeEmail == email },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
-        let reviews = (try? context?.fetch(descriptor)) ?? []
-        
-        // Seed some dummy reviews if none exist for this user
-        if reviews.isEmpty {
-            seedDummyReviews(forEmail: email)
-            return fetchReviews(forEmail: email)
-        }
-        
-        return reviews
-    }
-    
-    private func seedDummyReviews(forEmail email: String) {
-        let dummyReviews = [
-            LocalReview(reviewerName: "Sana Khan", reviewerEmail: "sana@example.com", revieweeEmail: email, rating: 5, title: "Great Experience", body: "The product was in perfect condition and the communication was smooth."),
-            LocalReview(reviewerName: "Zain Ali", reviewerEmail: "zain@example.com", revieweeEmail: email, rating: 4, title: "Recommended", body: "Good service and timely response. Highly recommended for rentals."),
-            LocalReview(reviewerName: "Ayesha Ahmed", reviewerEmail: "ayesha@example.com", revieweeEmail: email, rating: 5, title: "Very Helpful", body: "Very polite and helpful user. Everything went as planned.")
-        ]
-        
-        for review in dummyReviews {
-            context?.insert(review)
-        }
-        try? context?.save()
+        return (try? context?.fetch(descriptor)) ?? []
     }
     
     func fetchDeletedProducts() -> [LocalProduct] {
@@ -242,6 +236,19 @@ class LocalDataManager {
             type: "request",
             relatedId: request.productId.uuidString
         )
+    }
+    
+    /// Marks a request as reviewed by the borrower or the lender.
+    func markRequestAsReviewed(requestId: UUID, isLender: Bool) {
+        let descriptor = FetchDescriptor<LocalRequest>(predicate: #Predicate { $0.id == requestId })
+        if let request = (try? context?.fetch(descriptor))?.first {
+            if isLender {
+                request.isReviewedByLender = true
+            } else {
+                request.isReviewedByBorrower = true
+            }
+            saveContext()
+        }
     }
     
     func fetchProduct(id: UUID) -> LocalProduct? {
