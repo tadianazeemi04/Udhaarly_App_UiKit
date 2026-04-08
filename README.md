@@ -1,33 +1,38 @@
-# Udhaarly App - Development Progress (April 07) 📁
+# Udhaarly App - Development Progress (April 08) 📁
 
-Today's session focused on data integrity, transparency, and a cleaner user experience by purging dummy feedback and implementing a dedicated review management system.
+Today's session focused on **UI Standardization**, **Legal Compliance**, and **Personalized UX** to ensure a premium, production-ready experience.
 
 ---
 
-### 1. 🧼 Data Purity & Integrity
-Transitioned the platform towards a fully authentic reputation system.
-- **Dummy Data Purge**: 
-  - Completely removed the `seedDummyReviews` logic from the `LocalDataManager`.
-  - Implemented an **automated cleanup routine** that identifies and deletes legacy dummy reviews (e.g., from `sana@example.com`, `zain@example.com`, etc.) to ensure a clean database for real users.
-- **"Rate User" Persistence**: Added state tracking to `LocalRequest` (`isReviewedByBorrower`, `isReviewedByLender`) to ensure the "Rate User" button is permanently hidden once feedback has been submitted.
+### 1. ⚖️ Legal Compliance & Agreement Logic
+Ensured the platform meets modern legal standards with a professional interface.
+- **UI Standardization**:
+    - Synchronized the **Privacy Policy**, **Terms & Conditions**, and **Saved Address** headers with the "Favorites" page design.
+    - Set a uniform **140pt header height** with centered titles for consistent navigation.
+- **Dynamic Content Formatting**:
+    - Implemented `NSAttributedString` to bold section headers (e.g., "1. INFORMATION") and "Last Updated" dates for better readability.
+- **Agreement Persistence**: 
+    - Integrated **UserDefaults tracking** for legal agreements. The app now remembers if a user has already accepted the terms, pre-checking the box and enabling the "Accept" button automatically for returning users.
+- **Strict Enforcement**: The "Accept & Continue" button is strictly disabled until the agreement checkbox is selected.
 
-### 2. 📋 Enhanced Review Management
-Empowered users to manage their own reputation and feedback history.
-- **Dedicated "My Reviews" Screen**: 
-  - Created a new, premium UI accessible via the Profile Settings.
-  - Features a **dual-tab segmented control** to switch between "Received" and "Placed" reviews.
-- **Graceful Empty States**: 
-  - Implemented an `EmptyStateCell` to provide a clean and informative "No review yet" message when feedback is missing.
-  - This replaces empty white space with professional placeholder text.
+### 2. 💬 Personalized Chat Experience
+Transformed the messaging inbox into a more personal and professional space.
+- **Real-User Identity**: 
+    - Replaced participant email addresses in the **Chat Inbox** with their real names (e.g., "Ali Hamid") fetched from the local user database.
+- **Profile Integration**: 
+    - Replaced generic color circles with actual **User Profile Pictures**. Users without an uploaded photo now see a clean, branded profile icon.
 
-### 3. ✨ Polished & Dynamic UI
-Ensured that trust markers are accurate and real-time across the entire app.
-- **Dynamic Profile Header**: 
-  - Updated the **User Profile** (both for the current user and others) to calculate live average ratings.
-  - If a user has no reviews, the header now correctly shows "No ratings yet" and displays 5 unfilled stars.
-- **Product Detail Integration**: 
-  - Refined the **Product Detail** page to show the publisher's real-world rating and review count, replacing hardcoded placeholders.
-- **Bug Fixes**: Resolved critical scope errors in `UserSettingViewController` and standardized rating calculations across all modules.
+### 3. 🔐 Authentication & UX Refinements
+Streamlined the entry flow by removing noise and fixing interactive components.
+- **Focused Authentication**: 
+    - Removed Google, Facebook, and Apple social login buttons from both **Sign In** and **Sign Up** pages for a cleaner, unified email flow.
+- **Password Toggle Fix**: Restored the "Eye" icon to the Sign In page, ensuring users can toggle password visibility across all auth screens.
+- **Aesthetic Polishing**: 
+    - Disabled the **yellow iOS Autofill highlight** in password fields using `.oneTimeCode` text content typing to maintain the app's clean white aesthetic.
+    - Optimized email fields by disabling auto-correction and auto-capitalization to prevent input errors.
+
+### 4. 🧼 Settings Interface Cleanup
+- **Redundancy Removal**: Removed the unnecessary "Settings" row from the User Profile page, since the profile screen itself serves as the settings hub.
 
 ---
 *Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*
