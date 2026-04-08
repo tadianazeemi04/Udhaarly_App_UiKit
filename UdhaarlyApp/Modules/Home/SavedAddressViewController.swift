@@ -28,8 +28,6 @@ class SavedAddressViewController: UIViewController {
         let view = GradientView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.colors = [UIColor(hex: "#FF6700"), UIColor(hex: "#E90007")]
-        view.layer.cornerRadius = 30
-        view.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         return view
     }()
 
@@ -179,13 +177,13 @@ class SavedAddressViewController: UIViewController {
             headerGradient.topAnchor.constraint(equalTo: contentView.topAnchor),
             headerGradient.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             headerGradient.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            headerGradient.heightAnchor.constraint(equalToConstant: 180),
+            headerGradient.heightAnchor.constraint(equalToConstant: 140),
 
-            backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 15),
-            backButton.widthAnchor.constraint(equalToConstant: 24),
-            backButton.heightAnchor.constraint(equalToConstant: 24),
-
+            backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            backButton.bottomAnchor.constraint(equalTo: headerGradient.bottomAnchor, constant: -20),
+            backButton.widthAnchor.constraint(equalToConstant: 30),
+            backButton.heightAnchor.constraint(equalToConstant: 30),
+            
             navTitleLabel.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
             navTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 

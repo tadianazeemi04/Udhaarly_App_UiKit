@@ -125,11 +125,20 @@ class ChatCell: UITableViewCell {
         ])
     }
 
-    func configure(name: String, message: String, time: String, badgeCount: Int) {
+    func configure(name: String, message: String, time: String, badgeCount: Int, profileImage: Data?) {
         nameLabel.text = name
         messageLabel.text = message
         timeLabel.text = time
         badgeLabel.text = "\(badgeCount)"
         badgeContainer.isHidden = badgeCount == 0
+        
+        if let imageData = profileImage {
+            profileImageView.image = UIImage(data: imageData)
+            profileImageView.backgroundColor = .clear
+        } else {
+            profileImageView.image = UIImage(systemName: "person.circle.fill")
+            profileImageView.tintColor = .white
+            profileImageView.backgroundColor = UIColor(hex: "#FF6262")
+        }
     }
 }

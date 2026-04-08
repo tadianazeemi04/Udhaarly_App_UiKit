@@ -88,14 +88,22 @@ extension ChatsViewController: UITableViewDelegate, UITableViewDataSource {
         let currentEmail = UserDefaults.standard.string(forKey: "currentUserEmail") ?? UserDefaults.standard.string(forKey: "userEmail") ?? ""
         
         // Determine the opposing participant's email to display their name instead of our own.
-        let otherParticipant = (chat.participant1Email == currentEmail) ? chat.participant2Email : chat.participant1Email
+        let otherParticipantEmail = (chat.participant1Email == currentEmail) ? chat.participant2Email : chat.participant1Email
+        
+        var displayName = otherParticipantEmail
+        var profileImage: Data? = nil
+        
+        if let user = LocalDataManager.shared.fetchUser(email: otherParticipantEmail) {
+            displayName = "\(user.firstName) \(user.lastName)"
+            profileImage = user.profileImageData
+        }
         
         let dateFormatter = DateFormatter()
         dateFormatter.timeStyle = .short
         let timeString = dateFormatter.string(from: chat.lastUpdated)
         let messageText = chat.lastMessage ?? "Start a conversation"
         
-        cell.configure(name: otherParticipant, message: messageText, time: timeString, badgeCount: 0)
+        cell.configure(name: displayName, message: messageText, time: timeString, badgeCount: 0, profileImage: profileImage)
         return cell
     }
     

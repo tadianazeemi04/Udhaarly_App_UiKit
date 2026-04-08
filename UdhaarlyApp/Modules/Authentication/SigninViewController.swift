@@ -100,7 +100,9 @@ class SigninViewController: UIViewController {
         container.addSubview(button)
         textField.rightView = container
         textField.rightViewMode = .always
+        textField.isSecureTextEntry = true
         
+        button.tintColor = .brandOrange // Use brand color for visibility
         button.addTarget(self, action: #selector(togglePasswordVisibility(_:)), for: .touchUpInside)
     }
     
@@ -181,8 +183,6 @@ class SigninViewController: UIViewController {
         return btn
     }
     
-    private lazy var googleBtn = createSocialButton(imageName: "google")
-    private lazy var facebookBtn = createSocialButton(imageName: "facebook")
     private lazy var appleBtn = createSocialButton(imageName: "apple-logo")
     
     private let signupPromptButton: UIButton = {
@@ -314,12 +314,7 @@ class SigninViewController: UIViewController {
         passwordStack.axis = .vertical
         passwordStack.spacing = 6
         
-        let socialStack = UIStackView(arrangedSubviews: [googleBtn, facebookBtn, appleBtn])
-        socialStack.axis = .horizontal
-        socialStack.spacing = 20
-        socialStack.distribution = .equalSpacing
-        
-        let stack = UIStackView(arrangedSubviews: [emailStack, passwordStack, signinButton, orLabel, socialStack, signupPromptButton])
+        let stack = UIStackView(arrangedSubviews: [emailStack, passwordStack, signinButton, signupPromptButton])
         stack.axis = .vertical
         stack.spacing = 20
         stack.alignment = .center
@@ -395,12 +390,17 @@ class SigninViewController: UIViewController {
         setupGradientBackground()
         setupLayout()
         
-        passwordTextField.isSecureTextEntry = true
-        setupPasswordToggle(for: passwordTextField)
+        emailTextField.autocorrectionType = .no
+        emailTextField.autocapitalizationType = .none
+        emailTextField.spellCheckingType = .no
+        emailTextField.keyboardType = .emailAddress
+        emailTextField.textContentType = .emailAddress
         
-        // Disable suggestions that might interfere with manual login data.
         passwordTextField.autocorrectionType = .no
         passwordTextField.spellCheckingType = .no
+        passwordTextField.isSecureTextEntry = true
+        passwordTextField.textContentType = .oneTimeCode
+        setupPasswordToggle(for: passwordTextField)
         
         animateEntry()
         

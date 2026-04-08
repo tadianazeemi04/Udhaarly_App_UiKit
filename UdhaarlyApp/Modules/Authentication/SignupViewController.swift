@@ -185,8 +185,8 @@ class SignupViewController: UIViewController {
             passwordTextField.layer.borderColor = UIColor(white: 0.9, alpha: 1.0).cgColor
         }
         
-        // Update the Signup button state: only allow interaction if all fields are valid.
-        let isMatch = !password.isEmpty && password == confirm && isPasswordValid && isEmailValid
+        // Update the Signup button state: only allow interaction if all fields are valid AND agreement is checked.
+        let isMatch = !password.isEmpty && password == confirm && isPasswordValid && isEmailValid && isAgreed
         
         if isMatch {
             signupButton.isEnabled = true
@@ -199,6 +199,61 @@ class SignupViewController: UIViewController {
         }
     }
     
+    private var isAgreed = false {
+        didSet {
+            validateFields()
+        }
+    }
+    
+    private let agreementCheckbox: UIButton = {
+        let button = UIButton(type: .custom)
+        button.setImage(UIImage(systemName: "square"), for: .normal)
+        button.setImage(UIImage(systemName: "checkmark.square.fill"), for: .selected)
+        button.tintColor = .brandOrange
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    private let agreementTextView: UITextView = {
+        let tv = UITextView()
+        let mainText = "I agree to the "
+        let termsText = "Terms"
+        let andText = " and "
+        let privacyText = "Privacy Policy"
+        
+        let attributedString = NSMutableAttributedString(string: mainText, attributes: [
+            .foregroundColor: UIColor.gray,
+            .font: UIFont.systemFont(ofSize: 13)
+        ])
+        
+        let termsRange = NSRange(location: mainText.count, length: termsText.count)
+        attributedString.append(NSAttributedString(string: termsText, attributes: [
+            .foregroundColor: UIColor.brandOrange,
+            .font: UIFont.systemFont(ofSize: 13, weight: .bold),
+            .link: "udhaarly://terms"
+        ]))
+        
+        attributedString.append(NSAttributedString(string: andText, attributes: [
+            .foregroundColor: UIColor.gray,
+            .font: UIFont.systemFont(ofSize: 13)
+        ]))
+        
+        attributedString.append(NSAttributedString(string: privacyText, attributes: [
+            .foregroundColor: UIColor.brandOrange,
+            .font: UIFont.systemFont(ofSize: 13, weight: .bold),
+            .link: "udhaarly://privacy"
+        ]))
+        
+        tv.attributedText = attributedString
+        tv.isScrollEnabled = false
+        tv.isEditable = false
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        return tv
+    }()
+    
     private let signupButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Sign Up", for: .normal)
@@ -210,14 +265,6 @@ class SignupViewController: UIViewController {
         return btn
     }()
     
-    private let orLabel: UILabel = {
-        let label = UILabel()
-        label.text = "OR"
-        label.font = .systemFont(ofSize: 14, weight: .bold)
-        label.textColor = .black
-        label.textAlignment = .center
-        return label
-    }()
     
     /// Creates a uniform social login button using assets found in Assets.xcassets.
     /// - Parameter imageName: The name of the logo asset (e.g. "google", "facebook").
@@ -231,9 +278,6 @@ class SignupViewController: UIViewController {
         return btn
     }
     
-    private lazy var googleBtn = createSocialButton(imageName: "google")
-    private lazy var facebookBtn = createSocialButton(imageName: "facebook")
-    private lazy var appleBtn = createSocialButton(imageName: "apple-logo")
     
     private let loginPromptButton: UIButton = {
         let button = UIButton(type: .system)
@@ -282,6 +326,24 @@ class SignupViewController: UIViewController {
         return view
     }()
     
+    @objc private func didTapCheckbox() {
+        isAgreed.toggle()
+        agreementCheckbox.isSelected = isAgreed
+        
+        let generator = UISelectionFeedbackGenerator()
+        generator.selectionChanged()
+    }
+    
+    @objc private func didTapTerms() {
+        let vc = LegalDocumentViewController(type: .termsAndConditions)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    @objc private func didTapPrivacy() {
+        let vc = LegalDocumentViewController(type: .privacyPolicy)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+    
     /// Sets up the hierarchical layout using UIStackViews for clean spacing and AutoLayout for responsiveness.
     private func setupLayout(){
         view.addSubview(scrollView)
@@ -312,13 +374,13 @@ class SignupViewController: UIViewController {
         confirmStack.axis = .vertical
         confirmStack.spacing = 6
         
-        let socialStack = UIStackView(arrangedSubviews: [googleBtn, facebookBtn, appleBtn])
-        socialStack.axis = .horizontal
-        socialStack.spacing = 20
-        socialStack.distribution = .equalSpacing
+        let agreeStack = UIStackView(arrangedSubviews: [agreementCheckbox, agreementTextView])
+        agreeStack.axis = .horizontal
+        agreeStack.spacing = 8
+        agreeStack.alignment = .center
         
         // Main form stack containing all sections, buttons, and social logins.
-        let stack = UIStackView(arrangedSubviews: [emailStack, passwordStack, confirmStack, signupButton, orLabel, socialStack, loginPromptButton])
+        let stack = UIStackView(arrangedSubviews: [emailStack, passwordStack, confirmStack, agreeStack, signupButton, loginPromptButton])
         stack.axis = .vertical
         stack.spacing = 20
         stack.alignment = .center
@@ -401,17 +463,20 @@ class SignupViewController: UIViewController {
         setupPasswordToggle(for: passwordTextField)
         setupPasswordToggle(for: confirmPasswordTextField)
         
-        passwordTextField.textContentType = .oneTimeCode
-        confirmPasswordTextField.textContentType = .oneTimeCode
-
-        passwordTextField.passwordRules = nil
-        confirmPasswordTextField.passwordRules = nil
+        emailTextField.autocorrectionType = .no
+        emailTextField.autocapitalizationType = .none
+        emailTextField.spellCheckingType = .no
+        emailTextField.keyboardType = .emailAddress
+        emailTextField.textContentType = .emailAddress
+        
         passwordTextField.autocorrectionType = .no
         passwordTextField.spellCheckingType = .no
+        passwordTextField.textContentType = .oneTimeCode // Prevents yellow autofill highlight
+        
         confirmPasswordTextField.autocorrectionType = .no
         confirmPasswordTextField.spellCheckingType = .no
+        confirmPasswordTextField.textContentType = .oneTimeCode // Prevents yellow autofill highlight
         
-        // Custom animated appearance
         animateEntry()
         
         signupButton.isEnabled = false
@@ -423,6 +488,9 @@ class SignupViewController: UIViewController {
         
         signupButton.addTarget(self, action: #selector(didtapSignup), for: .touchUpInside)
         loginPromptButton.addTarget(self, action: #selector(didTapSignin), for: .touchUpInside)
+        
+        agreementCheckbox.addTarget(self, action: #selector(didTapCheckbox), for: .touchUpInside)
+        agreementTextView.delegate = self
         
         setupKeyboardObservers()
     }
@@ -471,6 +539,17 @@ class SignupViewController: UIViewController {
         })
     }
     
+}
+
+extension SignupViewController: UITextViewDelegate {
+    func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+        if URL.absoluteString == "udhaarly://terms" {
+            didTapTerms()
+        } else if URL.absoluteString == "udhaarly://privacy" {
+            didTapPrivacy()
+        }
+        return false
+    }
 }
 
 

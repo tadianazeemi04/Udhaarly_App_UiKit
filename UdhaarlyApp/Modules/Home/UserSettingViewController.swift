@@ -331,10 +331,18 @@ class UserSettingViewController: UIViewController {
 
         securitySection.addRows([
             SettingsRow(icon: "shield", title: "Privacy Policy", iconBg: "#F0FDF4", iconColor: "#00C951"),
-            SettingsRow(icon: "gearshape", title: "Settings", iconBg: "#F3F4F6", iconColor: "#6A7282"),
+            SettingsRow(icon: "doc.text.fill", title: "Terms & Conditions", iconBg: "#FFF7ED", iconColor: "#C2410C"),
             SettingsRow(icon: "rectangle.portrait.and.arrow.right", title: "Logout", iconBg: "#FEF2F2", iconColor: "#FF0000")
         ]) { [weak self] title in
-            if title == "Logout" {
+            if title == "Privacy Policy" {
+                let vc = LegalDocumentViewController(type: .privacyPolicy)
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Terms & Conditions" {
+                let vc = LegalDocumentViewController(type: .termsAndConditions)
+                vc.hidesBottomBarWhenPushed = true
+                self?.navigationController?.pushViewController(vc, animated: true)
+            } else if title == "Logout" {
                 self?.handleLogout()
             }
         }
