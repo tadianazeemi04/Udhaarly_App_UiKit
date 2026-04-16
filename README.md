@@ -1,38 +1,77 @@
-# Udhaarly App - Development Progress (April 08) 📁
+# Udhaarly 🤝
+### Peer-to-Peer Product Lending & Borrowing Platform
 
-Today's session focused on **UI Standardization**, **Legal Compliance**, and **Personalized UX** to ensure a premium, production-ready experience.
+**Udhaarly** is a premium, secure, and community-driven iOS application that enables users to lend and borrow products within their circles. Built with a modern "Glassmorphism" aesthetic, it prioritizes trust, ease of use, and professional functionality.
+
+---
+
+## 🚀 Key Features
+
+### 📦 Marketplace & Discovery
+- **Dynamic Dashboard**: Explore products by categories (Electronics, Home, Tools, etc.) with a vibrant, high-performance interface.
+- **Advanced Search**: Quickly find the items you need using the integrated search system.
+- **Product Details**: Comprehensive product views including descriptions, conditions, and lender profiles.
+
+### 💬 Seamless Communication
+- **Real-Time Chat**: Direct messaging between lenders and borrowers to discuss details and coordinate handovers.
+- **Smart Inbox**: Organized conversations displaying real user identities and profile status.
+- **Interaction Feedback**: Integrated review system to build platform-wide trust and reliability.
+
+### 🔐 Security & Persistence
+- **Secure Authentication**: Custom email-based login with OTP (One-Time Password) verification.
+- **Encrypted Storage**: Sensitive user credentials managed securely via **Apple Keychain Services**.
+- **SwiftData Integration**: High-performance local persistence for chats, listings, and user preferences.
+
+### 🛠 Administrative Control
+- **Admin Dashboard**: Exclusive access for platform owners to monitor activity, manage listings, and ensure community safety.
 
 ---
 
-### 1. ⚖️ Legal Compliance & Agreement Logic
-Ensured the platform meets modern legal standards with a professional interface.
-- **UI Standardization**:
-    - Synchronized the **Privacy Policy**, **Terms & Conditions**, and **Saved Address** headers with the "Favorites" page design.
-    - Set a uniform **140pt header height** with centered titles for consistent navigation.
-- **Dynamic Content Formatting**:
-    - Implemented `NSAttributedString` to bold section headers (e.g., "1. INFORMATION") and "Last Updated" dates for better readability.
-- **Agreement Persistence**: 
-    - Integrated **UserDefaults tracking** for legal agreements. The app now remembers if a user has already accepted the terms, pre-checking the box and enabling the "Accept" button automatically for returning users.
-- **Strict Enforcement**: The "Accept & Continue" button is strictly disabled until the agreement checkbox is selected.
+## 🎨 Design Philosophy
 
-### 2. 💬 Personalized Chat Experience
-Transformed the messaging inbox into a more personal and professional space.
-- **Real-User Identity**: 
-    - Replaced participant email addresses in the **Chat Inbox** with their real names (e.g., "Ali Hamid") fetched from the local user database.
-- **Profile Integration**: 
-    - Replaced generic color circles with actual **User Profile Pictures**. Users without an uploaded photo now see a clean, branded profile icon.
-
-### 3. 🔐 Authentication & UX Refinements
-Streamlined the entry flow by removing noise and fixing interactive components.
-- **Focused Authentication**: 
-    - Removed Google, Facebook, and Apple social login buttons from both **Sign In** and **Sign Up** pages for a cleaner, unified email flow.
-- **Password Toggle Fix**: Restored the "Eye" icon to the Sign In page, ensuring users can toggle password visibility across all auth screens.
-- **Aesthetic Polishing**: 
-    - Disabled the **yellow iOS Autofill highlight** in password fields using `.oneTimeCode` text content typing to maintain the app's clean white aesthetic.
-    - Optimized email fields by disabling auto-correction and auto-capitalization to prevent input errors.
-
-### 4. 🧼 Settings Interface Cleanup
-- **Redundancy Removal**: Removed the unnecessary "Settings" row from the User Profile page, since the profile screen itself serves as the settings hub.
+Udhaarly features a **Premium Design System** characterized by:
+- **Glassmorphism**: Elegant translucent layers and soft shadows for a modern feel.
+- **Dynamic Gradients**: Vibrant orange-to-red brand palettes that provide a energetic yet professional look.
+- **Micro-Animations**: Smooth transitions and entry animations (using spring dynamics) that make the app feel alive.
+- **Custom Typography**: Clean, legible font hierarchies across all modules.
 
 ---
-*Developed by Tadian Ahmad Azeemi for the Udhaarly Project.*
+
+## 💻 Technology Stack
+
+| Component | Technology |
+| --- | --- |
+| **Core** | Swift 5.10 |
+| **UI Framework** | UIKit (Programmatic UI) |
+| **Persistence** | SwiftData |
+| **Security** | Keychain Services / BCrypt-style hashing |
+| **Networking** | URLSession (REST API Ready) |
+| **Asset Management** | XCAssets with Single-Size Vector Support |
+
+---
+
+## 📂 Project Structure
+
+The project follows a **Feature-Based Modular Architecture**:
+
+- `Modules/Authentication`: Secure entry flows and profile setup.
+- `Modules/Dashboard`: Main marketplace, search, and discovery.
+- `Modules/Chats`: Real-time messaging and inbox management.
+- `Modules/Home`: User settings, reviews, and saved addresses.
+- `Modules/Persistence`: Centralized data management and notification services.
+- `Common`: Shared UI components, gradients, and legal content.
+
+---
+
+## 🛠 Setup & Installation
+
+1. Clone the repository:
+   ```bash
+   git clone [repository-url]
+   ```
+2. Open `UdhaarlyApp.xcodeproj` in **Xcode 15.0+**.
+3. Ensure the deployment target is set to **iOS 17.0+** (Required for SwiftData).
+4. Build and Run on your simulator or physical device.
+
+---
+*Developed as a Final Year Project (FYP) by Tadian Ahmad Azeemi.*
