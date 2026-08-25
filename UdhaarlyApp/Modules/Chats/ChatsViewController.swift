@@ -33,6 +33,45 @@ class ChatsViewController: UIViewController {
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
+    
+    // Empty State Components
+    private let emptyStateView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    
+    private let emptyStateIcon: UIImageView = {
+        let iv = UIImageView()
+        let config = UIImage.SymbolConfiguration(pointSize: 50, weight: .regular)
+        iv.image = UIImage(systemName: "bubble.left.and.bubble.right", withConfiguration: config)
+        iv.tintColor = .brandOrange.withAlphaComponent(0.6)
+        iv.contentMode = .scaleAspectFit
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
+    }()
+    
+    private let emptyStateTitle: UILabel = {
+        let label = UILabel()
+        label.text = "No Conversations Yet"
+        label.font = .systemFont(ofSize: 19, weight: .bold)
+        label.textColor = .black
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let emptyStateSubtitle: UILabel = {
+        let label = UILabel()
+        label.text = "When you reach out to a lender or receive borrow inquiries, your chat messages will appear here."
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = .gray
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -56,6 +95,10 @@ class ChatsViewController: UIViewController {
         // Simulate delivery: the current user opening their inbox means messages sent TO them are now delivered.
         LocalDataManager.shared.markMessagesAsDelivered(for: currentEmail)
         self.chats = LocalDataManager.shared.fetchChats(forEmail: currentEmail)
+        
+        let isEmpty = self.chats.isEmpty
+        emptyStateView.isHidden = !isEmpty
+        tableView.isHidden = isEmpty
         tableView.reloadData()
     }
 
@@ -63,6 +106,11 @@ class ChatsViewController: UIViewController {
     private func setupLayout() {
         view.addSubview(titleLabel)
         view.addSubview(tableView)
+        view.addSubview(emptyStateView)
+        
+        emptyStateView.addSubview(emptyStateIcon)
+        emptyStateView.addSubview(emptyStateTitle)
+        emptyStateView.addSubview(emptyStateSubtitle)
         
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
@@ -71,7 +119,27 @@ class ChatsViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            // Empty State Constraints
+            emptyStateView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
+            
+            emptyStateIcon.topAnchor.constraint(equalTo: emptyStateView.topAnchor),
+            emptyStateIcon.centerXAnchor.constraint(equalTo: emptyStateView.centerXAnchor),
+            emptyStateIcon.widthAnchor.constraint(equalToConstant: 70),
+            emptyStateIcon.heightAnchor.constraint(equalToConstant: 60),
+            
+            emptyStateTitle.topAnchor.constraint(equalTo: emptyStateIcon.bottomAnchor, constant: 16),
+            emptyStateTitle.leadingAnchor.constraint(equalTo: emptyStateView.leadingAnchor),
+            emptyStateTitle.trailingAnchor.constraint(equalTo: emptyStateView.trailingAnchor),
+            
+            emptyStateSubtitle.topAnchor.constraint(equalTo: emptyStateTitle.bottomAnchor, constant: 8),
+            emptyStateSubtitle.leadingAnchor.constraint(equalTo: emptyStateView.leadingAnchor),
+            emptyStateSubtitle.trailingAnchor.constraint(equalTo: emptyStateView.trailingAnchor),
+            emptyStateSubtitle.bottomAnchor.constraint(equalTo: emptyStateView.bottomAnchor)
         ])
     }
 }

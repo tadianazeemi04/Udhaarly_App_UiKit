@@ -112,10 +112,39 @@ class UserProfileViewController: UIViewController {
         ])
         
         backButton.addTarget(self, action: #selector(didTapBack), for: .touchUpInside)
+        callButton.addTarget(self, action: #selector(didTapCall), for: .touchUpInside)
     }
     
     @objc private func didTapBack() {
         navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func didTapCall() {
+        let phone = user.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !phone.isEmpty else {
+            let alert = UIAlertController(title: "Contact", message: "This user has not provided a phone number.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        let cleanNumber = phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        guard let url = URL(string: "tel://\(cleanNumber)") else {
+            return
+        }
+        
+        let actionSheet = UIAlertController(title: "Contact \(user.firstName)", message: "Call \(phone)?", preferredStyle: .actionSheet)
+        actionSheet.addAction(UIAlertAction(title: "Call", style: .default, handler: { _ in
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                let alert = UIAlertController(title: "Calling", message: "Simulating call to \(phone). (Physical phone calling requires a cellular iOS device).", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self.present(alert, animated: true)
+            }
+        }))
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(actionSheet, animated: true)
     }
     
     private func setupTableView() {

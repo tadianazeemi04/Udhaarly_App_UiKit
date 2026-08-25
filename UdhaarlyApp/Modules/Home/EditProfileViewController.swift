@@ -122,16 +122,60 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
     private var emailField: (UIView, UITextField)?
     private var firstNameField: (UIView, UITextField)?
     private var lastNameField: (UIView, UITextField)?
+    private var locationField: (UIView, UITextField)?
     private var phoneField: (UIView, UITextField)?
     private var addressField: (UIView, UITextField)?
+    
+    private let locationPicker = UIPickerView()
+    private let locations = AppLocations.allLocations
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupLocationPicker()
+        setupDelegates()
         loadUserData()
         setupActions()
         setupKeyboardHandling()
+    }
+    
+    private func setupDelegates() {
+        firstNameField?.1.delegate = self
+        lastNameField?.1.delegate = self
+        locationField?.1.delegate = self
+        phoneField?.1.delegate = self
+    }
+    
+    private func setupLocationPicker() {
+        locationPicker.delegate = self
+        locationPicker.dataSource = self
+        
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        
+        let cancelButton = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(locationCancelPressed))
+        cancelButton.tintColor = UIColor(hex: "#FF5722")
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(locationDonePressed))
+        doneButton.tintColor = UIColor(hex: "#FF5722")
+        
+        toolbar.setItems([cancelButton, flexibleSpace, doneButton], animated: false)
+        
+        locationField?.1.inputView = locationPicker
+        locationField?.1.inputAccessoryView = toolbar
+    }
+    
+    @objc private func locationCancelPressed() {
+        view.endEditing(true)
+    }
+    
+    @objc private func locationDonePressed() {
+        let selectedRow = locationPicker.selectedRow(inComponent: 0)
+        if selectedRow >= 0 && selectedRow < locations.count {
+            locationField?.1.text = locations[selectedRow]
+        }
+        view.endEditing(true)
     }
 
     private func setupKeyboardHandling() {
@@ -178,10 +222,12 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
         emailField = createEditableField(label: "Email (Non-editable)", placeholder: "", isEditable: false)
         firstNameField = createEditableField(label: "First Name", placeholder: "Enter first name")
         lastNameField = createEditableField(label: "Last Name", placeholder: "Enter last name")
+        locationField = createEditableField(label: "Location", placeholder: "Select location")
         phoneField = createEditableField(label: "Phone Number", placeholder: "Enter phone number")
+        phoneField?.1.keyboardType = .phonePad
         addressField = createEditableField(label: "Address", placeholder: "Enter address")
         
-        [emailField?.0, firstNameField?.0, lastNameField?.0, phoneField?.0, addressField?.0, saveButton].compactMap { $0 }.forEach {
+        [emailField?.0, firstNameField?.0, lastNameField?.0, locationField?.0, phoneField?.0, addressField?.0, saveButton].compactMap { $0 }.forEach {
             stackView.addArrangedSubview($0)
         }
 
@@ -257,15 +303,13 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
             tf.backgroundColor = UIColor(hex: "#F3F4F6")
         }
         
-        // Disable auto-correction for name fields as requested.
         if label.contains("Name") {
             tf.autocorrectionType = .no
             tf.spellCheckingType = .no
+            tf.autocapitalizationType = .words
         }
         
         tf.heightAnchor.constraint(equalToConstant: 45).isActive = true
-        
-        // Add target to detect changes in real-time if needed, but we'll check on back press.
         
         container.addArrangedSubview(titleLabel)
         container.addArrangedSubview(tf)
@@ -278,14 +322,15 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
         
         let currentFirstName = firstNameField?.1.text ?? ""
         let currentLastName = lastNameField?.1.text ?? ""
+        let currentLocation = locationField?.1.text ?? ""
         let currentPhone = phoneField?.1.text ?? ""
         let currentAddress = addressField?.1.text ?? ""
         
-        // Detect image change
         let isImageChanged = profileImageView.image?.jpegData(compressionQuality: 0.5) != user.profileImageData
         
         return currentFirstName != user.firstName ||
                currentLastName != user.lastName ||
+               currentLocation != user.location ||
                currentPhone != user.phoneNumber ||
                currentAddress != user.address ||
                isImageChanged
@@ -299,6 +344,7 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
             emailField?.1.text = user.email
             firstNameField?.1.text = user.firstName
             lastNameField?.1.text = user.lastName
+            locationField?.1.text = user.location
             phoneField?.1.text = user.phoneNumber
             addressField?.1.text = user.address
             
@@ -361,9 +407,9 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
     @objc private func saveTapped() {
         guard let user = currentUser else { return }
         
-        // Basic validation
         let firstName = firstNameField?.1.text?.trimmingCharacters(in: .whitespaces) ?? ""
         let lastName = lastNameField?.1.text?.trimmingCharacters(in: .whitespaces) ?? ""
+        let location = locationField?.1.text?.trimmingCharacters(in: .whitespaces) ?? ""
         
         if firstName.isEmpty || lastName.isEmpty {
             let alert = UIAlertController(title: "Error", message: "First and Last names cannot be empty.", preferredStyle: .alert)
@@ -371,11 +417,19 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
             present(alert, animated: true)
             return
         }
+        
+        if firstName.rangeOfCharacter(from: .decimalDigits) != nil || lastName.rangeOfCharacter(from: .decimalDigits) != nil {
+            let alert = UIAlertController(title: "Error", message: "Names must not contain any numbers.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
 
         user.firstName = firstName
         user.lastName = lastName
-        user.phoneNumber = phoneField?.1.text ?? ""
-        user.address = addressField?.1.text ?? ""
+        user.location = location
+        user.phoneNumber = phoneField?.1.text?.trimmingCharacters(in: .whitespaces) ?? ""
+        user.address = addressField?.1.text?.trimmingCharacters(in: .whitespaces) ?? ""
         
         // Save new profile image
         if let newImage = profileImageView.image {
@@ -389,5 +443,51 @@ class EditProfileViewController: UIViewController, PHPickerViewControllerDelegat
             self?.navigationController?.popViewController(animated: true)
         }))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - UITextFieldDelegate
+extension EditProfileViewController: UITextFieldDelegate {
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == firstNameField?.1 || textField == lastNameField?.1 {
+            if string.rangeOfCharacter(from: .decimalDigits) != nil {
+                return false
+            }
+            return true
+        }
+        if textField == locationField?.1 {
+            return false
+        }
+        return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if textField == locationField?.1 {
+            if let currentText = textField.text, let index = locations.firstIndex(of: currentText) {
+                locationPicker.selectRow(index, inComponent: 0, animated: false)
+            } else {
+                locationPicker.selectRow(0, inComponent: 0, animated: false)
+                textField.text = locations[0]
+            }
+        }
+    }
+}
+
+// MARK: - UIPickerViewDelegate & DataSource
+extension EditProfileViewController: UIPickerViewDelegate, UIPickerViewDataSource {
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return locations.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return locations[row]
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        locationField?.1.text = locations[row]
     }
 }

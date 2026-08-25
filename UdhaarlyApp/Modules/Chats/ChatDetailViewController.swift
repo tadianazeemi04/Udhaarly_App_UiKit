@@ -244,20 +244,27 @@ class ChatDetailViewController: UIViewController {
     }
 
     @objc private func handleCallUser() {
-        guard let phoneNumber = otherUser?.phoneNumber, !phoneNumber.isEmpty else {
-            showUnavailableAlert(message: "This user hasn't provided a phone number.")
+        guard let phoneNumber = otherUser?.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines), !phoneNumber.isEmpty else {
+            showUnavailableAlert(message: "This user has not provided a phone number.")
             return
         }
         
-        // Clean the phone number (remove spaces, etc.)
         let cleanNumber = phoneNumber.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
-        if let url = URL(string: "tel://\(cleanNumber)") {
+        guard let url = URL(string: "tel://\(cleanNumber)") else { return }
+        
+        let name = otherUser?.firstName ?? "User"
+        let actionSheet = UIAlertController(title: "Contact \(name)", message: "Call \(phoneNumber)?", preferredStyle: .actionSheet)
+        actionSheet.addAction(UIAlertAction(title: "Call", style: .default, handler: { [weak self] _ in
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
-                showUnavailableAlert(message: "Your device cannot make phone calls.")
+                let alert = UIAlertController(title: "Calling", message: "Simulating call to \(phoneNumber). (Physical phone calling requires a cellular iOS device).", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(alert, animated: true)
             }
-        }
+        }))
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(actionSheet, animated: true)
     }
 
     @objc private func handleBack() {

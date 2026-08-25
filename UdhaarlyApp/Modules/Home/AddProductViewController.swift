@@ -39,7 +39,9 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     private let nameCounterLabel = createCounterLabel(limit: 255)
     
     private let locationFieldTitle = createTitleLabel(text: "Location")
-    private lazy var locationTextField = createStyledTextField(placeholder: "Search Location", icon: "mappin.and.ellipse")
+    private lazy var locationTextField = createStyledTextField(placeholder: "Select Location", icon: "mappin.and.ellipse")
+    private let locationPicker = UIPickerView()
+    private let lahoreLocations = AppLocations.allLocations
     
     private let categoryFieldTitle = createTitleLabel(text: "Category")
     private lazy var categoryMenuButton = createMenuButton(placeholder: "Select Category", icon: "chevron.right")
@@ -148,6 +150,7 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         setupLayout()
         setupActions()
         setupMenus()
+        setupLocationPicker()
         setupKeyboardHandling()
         autoFillUserLocation()
         
@@ -280,9 +283,44 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     
     private func setupDelegates() {
         nameTextField.delegate = self
+        locationTextField.delegate = self
+        priceTextField.delegate = self
         durationNumberTextField.delegate = self
         descriptionTextView.delegate = self
         highlightsTextView.delegate = self
+    }
+    
+    private func setupLocationPicker() {
+        locationPicker.delegate = self
+        locationPicker.dataSource = self
+        
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        
+        let cancelButton = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(locationCancelPressed))
+        cancelButton.tintColor = .brandOrange
+        
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(locationDonePressed))
+        doneButton.tintColor = .brandOrange
+        
+        toolbar.setItems([cancelButton, flexibleSpace, doneButton], animated: false)
+        
+        locationTextField.inputView = locationPicker
+        locationTextField.inputAccessoryView = toolbar
+    }
+    
+    @objc private func locationCancelPressed() {
+        view.endEditing(true)
+    }
+    
+    @objc private func locationDonePressed() {
+        let selectedRow = locationPicker.selectedRow(inComponent: 0)
+        if selectedRow >= 0 && selectedRow < lahoreLocations.count {
+            locationTextField.text = lahoreLocations[selectedRow]
+        }
+        view.endEditing(true)
     }
     
     private func setupActions() {
@@ -659,8 +697,18 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
     
     // MARK: - Delegates
     
-    /// Limits the Product Name to 255 characters and updates the counter label in real-time.
+    /// Limits the Product Name to 255 characters, restricts price and duration to numbers, and restricts location to picker.
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == locationTextField {
+            return false
+        }
+        
+        if textField == priceTextField {
+            let allowedCharacters = CharacterSet.decimalDigits
+            let characterSet = CharacterSet(charactersIn: string)
+            return allowedCharacters.isSuperset(of: characterSet)
+        }
+        
         if textField == nameTextField {
             let currentText = textField.text ?? ""
             guard let stringRange = Range(range, in: currentText) else { return false }
@@ -701,6 +749,17 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
             return value <= maxLimit
         }
         return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if textField == locationTextField {
+            if let currentText = locationTextField.text, let index = lahoreLocations.firstIndex(of: currentText) {
+                locationPicker.selectRow(index, inComponent: 0, animated: false)
+            } else {
+                locationPicker.selectRow(0, inComponent: 0, animated: false)
+                locationTextField.text = lahoreLocations[0]
+            }
+        }
     }
     
     /// Updates the dynamic counter for Description and Highlights as the user types.
@@ -764,40 +823,69 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         let category = categoryMenuButton.title(for: .normal) ?? ""
         let priceText = priceTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let durationNum = durationNumberTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let durationUnit = durationUnitMenuButton.title(for: .normal) ?? ""
+        let durationUnit = durationUnitMenuButton.title(for: .normal) ?? "Days"
         let desc = descriptionTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let highlights = highlightsTextView.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         
-        // 2. Validation Logic
+        // 2. Comprehensive Field-Specific Validations
         
-        // --- Text Fields ---
-        if name.isEmpty || location.isEmpty || priceText.isEmpty || durationNum.isEmpty || desc.isEmpty || highlights.isEmpty {
-            showAlert(title: "Missing Information", message: "All text fields are required. Please fill in all information.")
+        // Product Name (minimum 3 characters)
+        if name.isEmpty || name.count < 3 {
+            showAlert(title: "Product Name", message: "Please enter a valid product name (at least 3 characters).")
             return
         }
         
-        // --- Category ---
+        // Location (Must be selected from approved Lahore locations)
+        if location.isEmpty || !lahoreLocations.contains(location) {
+            showAlert(title: "Location", message: "Please select a valid location from the provided list.")
+            return
+        }
+        
+        // Category
         if category == "Select Category" || category.isEmpty {
-            showAlert(title: "Select Category", message: "Please select a category for your product.")
+            showAlert(title: "Category", message: "Please select a category for your product.")
             return
         }
         
-        // --- Images ---
+        // Product Images (at least 1 in slots 0-4)
         let hasProductImage = selectedImages.prefix(5).contains { $0 != nil }
-        let hasPromotionImage = selectedImages[5] != nil
-        
         if !hasProductImage {
             showAlert(title: "Product Image", message: "Please add at least one product image.")
             return
         }
         
+        // Buyer Promotion Image (slot 5)
+        let hasPromotionImage = selectedImages[5] != nil
         if !hasPromotionImage {
             showAlert(title: "Promotion Image", message: "Please upload a buyer promotion image (white background).")
             return
         }
         
-        // 3. Data Processing
-        let price = Double(priceText) ?? 0.0
+        // Price (Must be positive number greater than 0)
+        guard let price = Double(priceText), price > 0 else {
+            showAlert(title: "Price", message: "Please enter a valid rental price greater than Rs. 0.")
+            return
+        }
+        
+        // Duration (Must be at least 1)
+        guard let durationVal = Int(durationNum), durationVal >= 1 else {
+            showAlert(title: "Duration", message: "Please enter a valid duration (minimum 1 \(durationUnit)).")
+            return
+        }
+        
+        // Product Description (minimum 10 characters)
+        if desc.isEmpty || desc.count < 10 {
+            showAlert(title: "Description", message: "Please enter a product description (at least 10 characters).")
+            return
+        }
+        
+        // Product Highlights (minimum 5 characters)
+        if highlights.isEmpty || highlights.count < 5 {
+            showAlert(title: "Highlights", message: "Please enter product highlights (at least 5 characters).")
+            return
+        }
+        
+        // 3. Data Processing & Persistence
         let duration = "\(durationNum) \(durationUnit)"
         
         // Sequential collection: Priority to index 0.
@@ -862,6 +950,25 @@ class AddProductViewController: UIViewController, PHPickerViewControllerDelegate
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+}
+
+// MARK: - UIPickerViewDelegate & DataSource (Location)
+extension AddProductViewController: UIPickerViewDelegate, UIPickerViewDataSource {
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return lahoreLocations.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return lahoreLocations[row]
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        locationTextField.text = lahoreLocations[row]
     }
 }
 

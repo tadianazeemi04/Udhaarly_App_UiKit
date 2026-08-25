@@ -40,6 +40,17 @@ class SearchViewController: UIViewController {
         return cv
     }()
     
+    private let emptyResultsLabel: UILabel = {
+        let label = UILabel()
+        label.text = "No products found"
+        label.textColor = .gray
+        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.textAlignment = .center
+        label.isHidden = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -65,6 +76,7 @@ class SearchViewController: UIViewController {
         
         view.addSubview(searchBar)
         view.addSubview(collectionView)
+        view.addSubview(emptyResultsLabel)
         
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
@@ -78,13 +90,17 @@ class SearchViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            emptyResultsLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyResultsLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20)
         ])
     }
     
     private func setupData() {
         allProducts = LocalDataManager.shared.fetchProducts()
         searchResults = []
+        emptyResultsLabel.isHidden = true
         collectionView.reloadData()
     }
 }
@@ -111,13 +127,17 @@ extension SearchViewController: UICollectionViewDelegate, UICollectionViewDataSo
 // MARK: - UISearchBarDelegate
 extension SearchViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        if searchText.isEmpty {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if query.isEmpty {
             searchResults = []
+            emptyResultsLabel.isHidden = true
         } else {
             searchResults = allProducts.filter { product in
-                product.name.lowercased().contains(searchText.lowercased()) ||
-                product.category.lowercased().contains(searchText.lowercased())
+                product.name.lowercased().contains(query) ||
+                product.category.lowercased().contains(query) ||
+                product.location.lowercased().contains(query)
             }.reversed()
+            emptyResultsLabel.isHidden = !searchResults.isEmpty
         }
         collectionView.reloadData()
     }
